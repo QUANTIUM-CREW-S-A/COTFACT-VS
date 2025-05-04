@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>COTFACT-VS | Sistema de Cotizaciones y Facturas</title>
+    <meta name="description" content="Sistema de gestión de cotizaciones y facturas para Viangsolution" />
+    <meta name="author" content="Viangsolution" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="COTFACT-VS" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- PWA Icons -->
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/apple-touch-icon-167x167.png" />
+    
+    <!-- Splash Screens for iOS -->
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-2048-2732.png" media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-1668-2388.png" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-1536-2048.png" media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-1125-2436.png" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-828-1792.png" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="/icons/apple-splash-750-1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:title" content="COTFACT-VS | Viangsolution" />
+    <meta property="og:description" content="Sistema de gestión de cotizaciones y facturas para Viangsolution" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://viangsolution.com/logo.png" />
+    <meta property="og:url" content="https://cotfact.viangsolution.com" />
+
+    <!-- Twitter Card data -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="COTFACT-VS | Viangsolution" />
+    <meta name="twitter:description" content="Sistema de gestión de cotizaciones y facturas" />
+    <meta name="twitter:image" content="https://viangsolution.com/logo.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/lovable-uploads/cotfact-favicon.png" />
+    
+    <!-- Cloudflare Headers (como comentario para recordar agregarlos en Cloudflare) -->
+    <!-- 
+    Agregar estas reglas en Cloudflare:
+    - Activar siempre HTTPS
+    - Activar Minificación automática (HTML, CSS, JS)
+    - Activar Brotli compression
+    - Activar Rocket Loader para mejorar carga de JavaScript
+    - Configurar Cache-Control headers para estáticos
+    - Configurar WAF (Firewall) para protección contra ataques
+    -->
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

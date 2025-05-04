@@ -1,0 +1,17 @@
+
+Placeholder para los iconos de la PWA. Recomendamos crear iconos con los siguientes tamaños:
+
+- icon-192x192.png (192x192 píxeles)
+- icon-512x512.png (512x512 píxeles)
+- apple-touch-icon.png (180x180 píxeles)
+- apple-touch-icon-152x152.png (152x152 píxeles)
+- apple-touch-icon-180x180.png (180x180 píxeles)
+- apple-touch-icon-167x167.png (167x167 píxeles)
+
+Y pantallas de inicio para distintos dispositivos iOS:
+- apple-splash-2048-2732.png
+- apple-splash-1668-2388.png
+- apple-splash-1536-2048.png
+- apple-splash-1125-2436.png
+- apple-splash-828-1792.png
+- apple-splash-750-1334.png

@@ -1,0 +1,11 @@
+{
+  "name": "supabase-test",
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "latest",
+    "dotenv": "latest"
+  },
+  "scripts": {
+    "start": "node supabase-test.js"
+  }
+}

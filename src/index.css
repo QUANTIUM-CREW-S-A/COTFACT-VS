@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 3.9%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96.1%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 89.8%;
+    --sidebar-ring: 0 0% 3.9%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+
+    --sidebar-background: 220.9 39.3% 11%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228.5 4.4% 15.9%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 220.9 39.3% 8%;
+    --sidebar-ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+  /* Eliminar borde azul en elementos clicados en Safari */
+  input, button, a {
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Estilos para el diseño de triángulos */
+.clip-triangle {
+  clip-path: polygon(0% 100%, 100% 100%, 100% 0%);
+}
+
+/* Prevenir el rebote en iOS */
+html {
+  position: fixed;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ocultar el scroll de la aplicación en modo standalone */
+@media (display-mode: standalone) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  * {
+    scrollbar-width: none;
+  }
+}
+
+/* Transición suave entre modos claro y oscuro */
+:root {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Mejoras para el modo oscuro */
+.dark .bg-white {
+  @apply bg-background;
+}
+
+.dark .border-gray-200 {
+  @apply border-gray-800;
+}
+
+.dark .hover\:shadow-md:hover {
+  @apply shadow-gray-700;
+}
+
+/* Mejoras de visibilidad de texto en modo oscuro */
+.dark {
+  /* Aumentar el contraste de elementos de texto muted */
+  --muted-foreground: 0 0% 75%; /* Más claro que el original para mejor legibilidad */
+  
+  /* Asegurar que textos en elementos con fondo de color tengan contraste adecuado */
+  --sidebar-foreground: 0 0% 98%;
+  --sidebar-accent-foreground: 0 0% 98%;
+}
+
+/* Correcciones específicas para elementos con problemas de contraste */
+.dark .text-gray-500 {
+  @apply text-gray-300;
+}
+
+.dark .text-gray-600 {
+  @apply text-gray-200;
+}
+
+.dark .text-gray-700 {
+  @apply text-gray-100;
+}
+
+/* Mejorar los textos dentro de tarjetas y zonas con fondos teñidos */
+.dark .bg-gray-50 {
+  @apply bg-gray-800;
+}
+
+.dark .text-muted-foreground {
+  @apply text-gray-300;
+}
+
+/* Mejor contraste para información de alertas y notificaciones */
+.dark .bg-amber-50 {
+  @apply bg-amber-900/30;
+}
+
+.dark .text-amber-600 {
+  @apply text-amber-300;
+}
+
+/* Mejorar contraste en elementos interactivos */
+.dark .hover\:bg-gray-50:hover {
+  @apply hover:bg-gray-700;
+}
+
+/* Asegurar que los datos en tablas sean legibles */
+.dark table {
+  @apply border-gray-700;
+}
+
+.dark table tbody td {
+  @apply text-gray-200;
+}
+
+.dark table thead th {
+  @apply text-gray-100 bg-gray-800;
+}
+
+/* Mayor contraste para botones y controles */
+.dark .border-blue-100,
+.dark .border-green-100,
+.dark .border-purple-100 {
+  @apply border-opacity-30;
+}
+
+/* Asegurar que los elementos en diálogos y modales tengan buen contraste */
+.dark [role="dialog"] {
+  @apply text-gray-100;
+}
+
+/* Animaciones para el Logo SVG */
+@keyframes draw {
+  0% {
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+  }
+  60% {
+    stroke-dasharray: 200;
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dasharray: 0;
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw {
+  animation: draw 1.2s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Para uso en logos SVG */
+.logo-animate-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+/* Para efectos hover en el logo */
+svg:hover .logo-hover-animate {
+  transform: scale(1.05);
+  transition: transform 0.2s ease-in-out;
+}

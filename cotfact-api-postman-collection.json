@@ -1,0 +1,602 @@
+{
+  "info": {
+    "name": "CotFact API",
+    "description": "Colección de APIs para CotFact - Sistema de facturación y cotizaciones",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Documentos",
+      "description": "Endpoints para gestionar documentos (facturas, cotizaciones, etc.)",
+      "item": [
+        {
+          "name": "Listar todos los documentos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "documents"]
+            },
+            "description": "Obtiene la lista completa de documentos ordenados por fecha de creación (más reciente primero)"
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener documento por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/documents/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "documents", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del documento a consultar"
+                }
+              ]
+            },
+            "description": "Obtiene los detalles completos de un documento por su ID, incluyendo cliente, items, términos y métodos de pago"
+          },
+          "response": []
+        },
+        {
+          "name": "Crear documento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentNumber\": \"COT-00123\",\n  \"date\": \"2025-05-03\",\n  \"customer\": {\n    \"name\": \"Cliente Ejemplo\",\n    \"company\": \"Empresa Ejemplo S.A.\",\n    \"location\": \"Ciudad de Panamá\",\n    \"phone\": \"123-456-7890\",\n    \"email\": \"cliente@ejemplo.com\",\n    \"type\": \"company\"\n  },\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría\",\n      \"quantity\": 10,\n      \"unitPrice\": 50.00,\n      \"total\": 500.00\n    },\n    {\n      \"description\": \"Desarrollo de software\",\n      \"quantity\": 1,\n      \"unitPrice\": 1200.00,\n      \"total\": 1200.00\n    }\n  ],\n  \"subtotal\": 1700.00,\n  \"tax\": 119.00,\n  \"total\": 1819.00,\n  \"status\": \"draft\",\n  \"type\": \"quote\",\n  \"validDays\": 30,\n  \"termsAndConditions\": [\n    \"Esta cotización tiene una validez de 30 días calendario\",\n    \"Los precios están expresados en USD y no incluyen ITBMS\",\n    \"El tiempo de entrega es de 15 días hábiles\"\n  ],\n  \"paymentMethods\": [\n    {\n      \"bank\": \"Banco Nacional\",\n      \"accountHolder\": \"CotFact S.A.\",\n      \"accountNumber\": \"123456789\",\n      \"accountType\": \"Cuenta Corriente\",\n      \"isYappy\": false\n    },\n    {\n      \"isYappy\": true,\n      \"yappyPhone\": \"6123-4567\",\n      \"yappyLogo\": \"https://example.com/yappy-logo.png\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "documents"]
+            },
+            "description": "Crea un nuevo documento (factura, cotización, etc.) con todos sus detalles asociados"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar documento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentNumber\": \"COT-00123\",\n  \"date\": \"2025-05-03\",\n  \"customer\": {\n    \"id\": \"existing-customer-id\",\n    \"name\": \"Cliente Actualizado\",\n    \"company\": \"Empresa Actualizada S.A.\",\n    \"location\": \"Ciudad de Panamá\",\n    \"phone\": \"123-456-7890\",\n    \"email\": \"cliente.actualizado@ejemplo.com\",\n    \"type\": \"company\",\n    \"updated\": true\n  },\n  \"items\": [\n    {\n      \"description\": \"Servicio de consultoría premium\",\n      \"quantity\": 15,\n      \"unitPrice\": 60.00,\n      \"total\": 900.00\n    },\n    {\n      \"description\": \"Desarrollo y mantenimiento de software\",\n      \"quantity\": 1,\n      \"unitPrice\": 1500.00,\n      \"total\": 1500.00\n    }\n  ],\n  \"subtotal\": 2400.00,\n  \"tax\": 168.00,\n  \"total\": 2568.00,\n  \"status\": \"approved\",\n  \"type\": \"quote\",\n  \"validDays\": 15,\n  \"termsAndConditions\": [\n    \"Esta cotización tiene una validez de 15 días calendario\",\n    \"Los precios están expresados en USD y no incluyen ITBMS\",\n    \"El tiempo de entrega es de 20 días hábiles\"\n  ],\n  \"paymentMethods\": [\n    {\n      \"id\": \"existing-payment-method-id\",\n      \"bank\": \"Banco Nacional\",\n      \"accountHolder\": \"CotFact S.A.\",\n      \"accountNumber\": \"123456789\",\n      \"accountType\": \"Cuenta Corriente\",\n      \"isYappy\": false\n    },\n    {\n      \"isYappy\": true,\n      \"yappyPhone\": \"6123-4567\",\n      \"yappyLogo\": \"https://example.com/yappy-logo-updated.png\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/documents/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "documents", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del documento a actualizar"
+                }
+              ]
+            },
+            "description": "Actualiza un documento existente por su ID. Se reemplazan todos los items, términos y métodos de pago asociados."
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar documento",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/documents/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "documents", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del documento a eliminar"
+                }
+              ]
+            },
+            "description": "Elimina un documento por su ID, incluyendo todos sus items, términos y métodos de pago asociados"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Clientes",
+      "description": "Endpoints para gestionar clientes",
+      "item": [
+        {
+          "name": "Listar todos los clientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers"]
+            },
+            "description": "Obtiene la lista completa de clientes"
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener cliente por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del cliente a consultar"
+                }
+              ]
+            },
+            "description": "Obtiene los detalles de un cliente por su ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Crear cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nuevo Cliente\",\n  \"company\": \"Nueva Empresa S.A.\",\n  \"location\": \"Ciudad de Panamá\",\n  \"phone\": \"123-456-7890\",\n  \"email\": \"nuevo.cliente@ejemplo.com\",\n  \"type\": \"company\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers"]
+            },
+            "description": "Crea un nuevo cliente"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cliente Actualizado\",\n  \"company\": \"Empresa Actualizada S.A.\",\n  \"location\": \"David, Chiriquí\",\n  \"phone\": \"987-654-3210\",\n  \"email\": \"cliente.actualizado@ejemplo.com\",\n  \"type\": \"company\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del cliente a actualizar"
+                }
+              ]
+            },
+            "description": "Actualiza un cliente existente por su ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar cliente",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/customers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "customers", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del cliente a eliminar"
+                }
+              ]
+            },
+            "description": "Elimina un cliente por su ID"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Información de Empresa",
+      "description": "Endpoints para gestionar la información de la empresa",
+      "item": [
+        {
+          "name": "Obtener información de la empresa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/company-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "company-info"]
+            },
+            "description": "Obtiene la información de la empresa configurada"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar información de la empresa",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CotFact S.A.\",\n  \"logo\": \"base64-encoded-image-data-or-url\",\n  \"address\": \"Calle 50, Ciudad de Panamá\",\n  \"phone\": \"(507) 123-4567\",\n  \"email\": \"contacto@cotfact.com\",\n  \"website\": \"https://cotfact.com\",\n  \"ruc\": \"123456-7-890123\",\n  \"dv\": \"45\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/company-info",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "company-info"]
+            },
+            "description": "Actualiza la información de la empresa"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Métodos de Pago",
+      "description": "Endpoints para gestionar métodos de pago",
+      "item": [
+        {
+          "name": "Listar todos los métodos de pago",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/payment-methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "payment-methods"]
+            },
+            "description": "Obtiene la lista completa de métodos de pago"
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener método de pago por ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/payment-methods/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "payment-methods", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del método de pago a consultar"
+                }
+              ]
+            },
+            "description": "Obtiene los detalles de un método de pago por su ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Crear método de pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isYappy\": false,\n  \"bank\": \"Banco General\",\n  \"accountHolder\": \"CotFact S.A.\",\n  \"accountNumber\": \"123456789\",\n  \"accountType\": \"Cuenta Corriente\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/payment-methods",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "payment-methods"]
+            },
+            "description": "Crea un nuevo método de pago"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar método de pago",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isYappy\": true,\n  \"yappyPhone\": \"6123-4567\",\n  \"yappyLogo\": \"https://example.com/yappy-logo.png\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/payment-methods/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "payment-methods", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del método de pago a actualizar"
+                }
+              ]
+            },
+            "description": "Actualiza un método de pago existente por su ID"
+          },
+          "response": []
+        },
+        {
+          "name": "Eliminar método de pago",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/payment-methods/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "payment-methods", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "",
+                  "description": "ID del método de pago a eliminar"
+                }
+              ]
+            },
+            "description": "Elimina un método de pago por su ID"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Preferencias de Plantilla",
+      "description": "Endpoints para gestionar preferencias de plantilla",
+      "item": [
+        {
+          "name": "Obtener preferencias de plantilla",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/template-preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "template-preferences"]
+            },
+            "description": "Obtiene las preferencias de plantilla configuradas"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar preferencias de plantilla",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"primaryColor\": \"#4F46E5\",\n  \"accentColor\": \"#10B981\",\n  \"fontFamily\": \"Inter\",\n  \"fontSize\": \"medium\",\n  \"logoPosition\": \"left\",\n  \"showBorder\": true,\n  \"borderColor\": \"#E5E7EB\",\n  \"contentWidth\": \"narrow\",\n  \"showSignature\": true,\n  \"signatureName\": \"Juan Pérez\",\n  \"signaturePosition\": \"Gerente General\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/template-preferences",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "template-preferences"]
+            },
+            "description": "Actualiza las preferencias de plantilla"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Autenticación",
+      "description": "Endpoints para autenticación y gestión de usuarios",
+      "item": [
+        {
+          "name": "Iniciar sesión",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@ejemplo.com\",\n  \"password\": \"contraseña123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "login"]
+            },
+            "description": "Inicia sesión y obtiene un token de autenticación"
+          },
+          "response": []
+        },
+        {
+          "name": "Registro de usuario",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nuevo Usuario\",\n  \"email\": \"nuevo.usuario@ejemplo.com\",\n  \"password\": \"contraseña123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "register"]
+            },
+            "description": "Registra un nuevo usuario"
+          },
+          "response": []
+        },
+        {
+          "name": "Obtener perfil de usuario",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "profile"]
+            },
+            "description": "Obtiene el perfil del usuario autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "Actualizar contraseña",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"contraseña123\",\n  \"newPassword\": \"nuevaContraseña456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "change-password"]
+            },
+            "description": "Actualiza la contraseña del usuario autenticado"
+          },
+          "response": []
+        },
+        {
+          "name": "Solicitar restablecimiento de contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@ejemplo.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "forgot-password"]
+            },
+            "description": "Solicita un token para restablecer la contraseña"
+          },
+          "response": []
+        },
+        {
+          "name": "Restablecer contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"token-de-reseteo\",\n  \"newPassword\": \"nuevaContraseña789\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}{{apiPrefix}}/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["{{apiPrefix}}", "auth", "reset-password"]
+            },
+            "description": "Restablece la contraseña utilizando un token válido"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "apiPrefix",
+      "value": "/api",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
