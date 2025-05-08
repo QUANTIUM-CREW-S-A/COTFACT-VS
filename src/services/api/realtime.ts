@@ -116,6 +116,37 @@ export const testServerConnection = async (
   
   console.log('Iniciando pruebas de conexión con el servidor backend...');
 
+  /**
+   * Detecta si una extensión o política de navegador está bloqueando solicitudes (ERR_BLOCKED_BY_CLIENT)
+   * Llama a onBlocked si se detecta el bloqueo.
+   */
+  async function checkForBlockers(url: string, onBlocked: () => void) {
+    try {
+      await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+    } catch (err: any) {
+      if (err?.message?.includes('BLOCKED_BY_CLIENT')) {
+        onBlocked();
+      }
+    }
+  }
+
+  /**
+   * Realiza una petición con reintentos inteligentes y backoff exponencial.
+   */
+  async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, delay = 1000): Promise<Response> {
+    let lastError;
+    for (let i = 0; i < retries; i++) {
+      try {
+        return await fetch(url, options);
+      } catch (err) {
+        lastError = err;
+        if (err?.message?.includes('BLOCKED_BY_CLIENT')) throw err;
+        await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+      }
+    }
+    throw lastError;
+  }
+
   // Usar un método mejorado para probar la conexión con Fetch
   const testWithModernFetch = async (url: string, endpoint: string): Promise<{
     connected: boolean;
@@ -123,10 +154,10 @@ export const testServerConnection = async (
     error?: any;
   }> => {
     try {
-      // Usar no-cors para evitar errores CORS pero detectar si el servidor está activo
-      const noCorsResponse = await fetch(`${url}${endpoint}`, {
-        method: 'HEAD', // Solo necesitamos verificar si responde
-        mode: 'no-cors', // Modo no-cors para evitar errores CORS
+      // Usar fetchWithRetry para robustez
+      await fetchWithRetry(`${url}${endpoint}`, {
+        method: 'HEAD',
+        mode: 'no-cors',
         cache: 'no-store',
         credentials: 'omit',
         redirect: 'follow',

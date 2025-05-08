@@ -7,6 +7,7 @@ import { CardContent, CardFooter } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/context/theme/ThemeProvider";
 
 interface PasswordResetFormProps {
   onSubmit: (email: string) => Promise<boolean>;
@@ -23,6 +24,7 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [formFocused, setFormFocused] = useState<boolean>(false);
+  const { isDarkMode } = useTheme();
 
   const inputVariants = {
     focused: { scale: 1.02, boxShadow: "0 0 0 2px rgba(79, 70, 229, 0.2)" },
@@ -78,17 +80,36 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
 
         {success ? (
           <motion.div
-            className="bg-green-50 border border-green-200 text-green-700 p-6 rounded-lg"
+            className={cn(
+              "border p-6 rounded-lg",
+              isDarkMode 
+                ? "bg-green-900/30 border-green-800 text-green-300" 
+                : "bg-green-50 border-green-200 text-green-700"
+            )}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="bg-green-100 p-3 rounded-full">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+              <div className={cn(
+                "p-3 rounded-full",
+                isDarkMode ? "bg-green-800/50" : "bg-green-100"
+              )}>
+                <CheckCircle className={cn(
+                  "h-8 w-8",
+                  isDarkMode ? "text-green-400" : "text-green-600"
+                )} />
               </div>
-              <h3 className="font-medium text-lg text-green-800">Correo enviado</h3>
-              <p className="text-sm text-green-700">
+              <h3 className={cn(
+                "font-medium text-lg",
+                isDarkMode ? "text-green-300" : "text-green-800"
+              )}>
+                Correo enviado
+              </h3>
+              <p className={cn(
+                "text-sm",
+                isDarkMode ? "text-green-300/90" : "text-green-700"
+              )}>
                 Hemos enviado un enlace de recuperación a tu dirección de correo electrónico.
                 Por favor, revisa tu bandeja de entrada (y carpeta de spam) y sigue las instrucciones.
               </p>
@@ -101,7 +122,9 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
                 htmlFor="email" 
                 className={cn(
                   "text-sm font-medium transition-colors duration-200",
-                  formFocused ? "text-blue-700" : "text-gray-700"
+                  formFocused 
+                    ? "text-blue-600" 
+                    : isDarkMode ? "text-gray-200" : "text-gray-700"
                 )}
               >
                 Correo electrónico
@@ -125,8 +148,12 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="nombre@ejemplo.com"
                   className={cn(
-                    "pl-10 py-6 bg-gray-50 border-gray-200 focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-blue-500 transition-all",
-                    formFocused ? "border-blue-400 bg-white" : ""
+                    "pl-10 py-6 focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-blue-500 transition-all",
+                    formFocused 
+                      ? "border-blue-400 bg-white dark:bg-gray-700"
+                      : isDarkMode
+                        ? "bg-gray-800 border-gray-700 text-white" 
+                        : "bg-gray-50 border-gray-200 text-gray-800"
                   )}
                   autoFocus
                   onFocus={() => setFormFocused(true)}
@@ -135,9 +162,16 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
               </motion.div>
             </div>
             
-            <div className="text-sm text-gray-600 bg-blue-50 p-4 rounded-lg border border-blue-100">
+            <div className={cn(
+              "text-sm p-4 rounded-lg border",
+              isDarkMode
+                ? "bg-blue-900/20 border-blue-800/50 text-gray-300"
+                : "bg-blue-50 border-blue-100 text-gray-600"
+            )}>
               <p className="flex items-start gap-2">
-                <span className="text-blue-500 mt-0.5"><Mail className="h-4 w-4" /></span>
+                <span className={isDarkMode ? "text-blue-400 mt-0.5" : "text-blue-500 mt-0.5"}>
+                  <Mail className="h-4 w-4" />
+                </span>
                 <span>Te enviaremos un enlace para restablecer tu contraseña. Si no encuentras el correo, revisa tu carpeta de spam.</span>
               </p>
             </div>
@@ -151,7 +185,12 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
             type="button"
             variant="default"
             onClick={onBack}
-            className="mx-auto bg-blue-600 hover:bg-blue-700"
+            className={cn(
+              "mx-auto",
+              isDarkMode
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            )}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver al inicio de sesión
@@ -162,7 +201,7 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
               type="button"
               variant="ghost"
               onClick={onBack}
-              className="text-gray-600"
+              className={isDarkMode ? "text-gray-300" : "text-gray-600"}
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Volver
@@ -171,7 +210,11 @@ const PasswordResetForm: React.FC<PasswordResetFormProps> = ({
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className={cn(
+                isDarkMode
+                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              )}
             >
               {isLoading ? (
                 <motion.div 

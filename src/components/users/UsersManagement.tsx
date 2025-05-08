@@ -34,6 +34,7 @@ const UsersManagement: React.FC = () => {
     role: "audit" as UserRole, // Rol por defecto para nuevos usuarios
     tfa_habilitado: false,
     tfa_metodo: "app" as TFAMethod,
+    mustChangePassword: true, // Por defecto, requerir cambio de contraseña
   });
   const [editUserData, setEditUserData] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
@@ -114,6 +115,7 @@ const UsersManagement: React.FC = () => {
       role: defaultRole as UserRole,
       tfa_habilitado: false,
       tfa_metodo: "app",
+      mustChangePassword: true, // Por defecto, requerir cambio de contraseña
     });
   };
   
@@ -164,6 +166,13 @@ const UsersManagement: React.FC = () => {
       tfa_metodo: method,
     }));
   };
+
+  const handleAddMustChangePasswordChange = (required: boolean) => {
+    setNewUserData((prev) => ({
+      ...prev,
+      mustChangePassword: required,
+    }));
+  };
   
   const handleAddUser = async () => {
     try {
@@ -182,6 +191,8 @@ const UsersManagement: React.FC = () => {
         tfa_habilitado: false, // Por defecto deshabilitado para nuevos usuarios
         activo: true,
         intentos_fallidos: 0,
+        mustChangePassword: newUserData.mustChangePassword,
+        password_changed: !newUserData.mustChangePassword, // Si no se requiere cambio, marcar como ya cambiada
       };
   
       // Verificar si el usuario ya existe en la lista actual
@@ -401,6 +412,7 @@ const UsersManagement: React.FC = () => {
           onEditRoleChange={handleEditRoleChange}
           onEditTfaChange={handleEditTfaChange}
           onEditTfaMethodChange={handleEditTfaMethodChange}
+          onAddMustChangePasswordChange={handleAddMustChangePasswordChange}
           onAddUser={handleAddUser}
           onEditUser={handleEditUser}
         />

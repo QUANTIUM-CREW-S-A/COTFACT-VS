@@ -24,4 +24,5 @@ export interface AuthState {
   error: string | null;
   verifying2FA: boolean;
   pendingUser?: Omit<User, 'twoFactorSecret'>;
+  passwordChangeRequired?: boolean; // Añadida esta propiedad
 }

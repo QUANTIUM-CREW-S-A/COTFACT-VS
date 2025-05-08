@@ -18,6 +18,8 @@ import { toast } from "sonner";
 import { supabase, supabaseAdmin } from "@/lib/supabase";
 import { usePasswordReset } from "@/context/auth/hooks/usePasswordReset";
 import { motion } from "framer-motion";
+import { useTheme } from "@/context/theme/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 // Obtener la URL de Supabase del entorno
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -28,12 +30,19 @@ const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login, authState } = useAuth();
   const { requestPasswordReset, isLoading: isResettingPassword } = usePasswordReset();
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     if (authState.isAuthenticated) {
-      navigate("/dashboard");
+      if (authState.passwordChangeRequired) {
+        // Si se requiere cambio de contraseña, redirigir a la página correspondiente
+        navigate("/password-change");
+      } else {
+        // Si la autenticación es exitosa y no requiere cambio de contraseña, ir al dashboard
+        navigate("/dashboard");
+      }
     }
-  }, [authState.isAuthenticated, navigate]);
+  }, [authState.isAuthenticated, authState.passwordChangeRequired, navigate]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +96,10 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col md:flex-row overflow-hidden">
+    <div className={cn(
+      "min-h-screen w-full flex flex-col md:flex-row overflow-hidden",
+      isDarkMode ? "bg-gray-900" : ""
+    )}>
       {/* Panel izquierdo decorativo (solo visible en desktop) */}
       <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-700 p-8 relative overflow-hidden">
         <div className="absolute inset-0 bg-black/10 z-0"></div>
@@ -119,7 +131,12 @@ const LoginPage: React.FC = () => {
       </div>
       
       {/* Panel derecho - Formulario de login */}
-      <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-50 px-4 py-12">
+      <div className={cn(
+        "w-full md:w-1/2 flex items-center justify-center px-4 py-6 transition-colors duration-300",
+        isDarkMode 
+          ? "bg-gray-900" 
+          : "bg-gray-50"
+      )}>
         <motion.div 
           className="w-full max-w-md"
           initial="hidden"
@@ -127,13 +144,28 @@ const LoginPage: React.FC = () => {
           variants={fadeIn}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Card className="shadow-xl border-0 rounded-2xl overflow-hidden">
+          <Card className={cn(
+            "shadow-xl border-0 rounded-2xl overflow-hidden transition-colors duration-300",
+            isDarkMode 
+              ? "bg-gray-800 shadow-gray-900/40" 
+              : "bg-white"
+          )}>
             <div className="h-1 bg-gradient-to-r from-blue-500 to-purple-600"></div>
-            <CardHeader className="space-y-3 pt-8 pb-6">
-              <CardTitle className="text-2xl font-bold text-gray-800 tracking-tight text-center">
+            <CardHeader className="space-y-3 pt-6 pb-4">
+              <CardTitle className={cn(
+                "text-2xl font-bold tracking-tight text-center transition-colors duration-300",
+                isDarkMode 
+                  ? "text-white" 
+                  : "text-gray-800"
+              )}>
                 {getPageTitle()}
               </CardTitle>
-              <CardDescription className="text-gray-600 text-center">
+              <CardDescription className={cn(
+                "text-center transition-colors duration-300",
+                isDarkMode 
+                  ? "text-gray-300" 
+                  : "text-gray-600"
+              )}>
                 {getPageDescription()}
               </CardDescription>
             </CardHeader>
@@ -161,7 +193,12 @@ const LoginPage: React.FC = () => {
             </div>
           </Card>
           
-          <p className="text-center text-sm text-gray-600 mt-8">
+          <p className={cn(
+            "text-center text-sm mt-8 transition-colors duration-300",
+            isDarkMode 
+              ? "text-gray-400" 
+              : "text-gray-600"
+          )}>
             © {new Date().getFullYear()} Quantium Crew S.A. Todos los derechos reservados.
           </p>
         </motion.div>

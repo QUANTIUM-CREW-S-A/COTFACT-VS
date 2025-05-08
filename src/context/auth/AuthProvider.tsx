@@ -7,6 +7,7 @@ import { use2FAActions } from "./use2FAActions";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Database } from '@/integrations/supabase/types';
+import { useLoading } from "../loading/LoadingContext";
 
 // Definir y exportar AuthContext aquí
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +26,7 @@ function isProfile(obj: unknown): obj is Profile {
 }
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { startLoading, stopLoading } = useLoading();
   const [authState, setAuthState] = useState<AuthState>({
     currentUser: null,
     isAuthenticated: false,
@@ -37,6 +39,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let mounted = true;
 
     const initializeAuth = async () => {
+      startLoading("Verificando sesión de usuario", "AuthProvider");
       try {
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
@@ -114,6 +117,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               error: null,
               verifying2FA: false
             });
+            stopLoading("AuthProvider");
           } else if (!profileData && mounted) {
             // Manejar caso donde el usuario está autenticado pero no tiene perfil
             setAuthState(prev => ({
@@ -122,6 +126,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               isAuthenticated: false,
               error: "Perfil de usuario no encontrado."
             }));
+            stopLoading("AuthProvider");
           }
         } else if (mounted) {
           // No hay sesión activa
@@ -129,6 +134,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             ...prev,
             isLoading: false
           }));
+          stopLoading("AuthProvider");
         }
       } catch (error: unknown) {
         console.error("Error initializing auth:", error);
@@ -138,6 +144,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             isLoading: false,
             error: error instanceof Error ? error.message : "Error desconocido al iniciar sesión"
           }));
+          stopLoading("AuthProvider");
         }
       }
     };
@@ -146,6 +153,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Configurar listener para cambios de autenticación
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      startLoading("Cambiando estado de autenticación", "AuthProvider");
       console.log("Auth state changed:", event, session?.user?.id);
 
       if (session?.user && mounted) {
@@ -166,6 +174,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               isLoading: false,
               error: "Error al actualizar el estado del perfil."
             }));
+            stopLoading("AuthProvider");
             return;
           }
 
@@ -200,6 +209,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               error: null,
               verifying2FA: false
             });
+            stopLoading("AuthProvider");
           } else if (!profileData && mounted) {
             // Perfil no encontrado después de un cambio de autenticación
             setAuthState({
@@ -209,6 +219,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               error: "Perfil de usuario no encontrado tras cambio de autenticación.",
               verifying2FA: false
             });
+            stopLoading("AuthProvider");
           }
         } catch (error: unknown) {
           console.error("Error updating auth state:", error);
@@ -218,6 +229,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               isLoading: false,
               error: error instanceof Error ? error.message : "Error desconocido al actualizar estado"
             }));
+            stopLoading("AuthProvider");
           }
         }
       } else if (mounted) {
@@ -229,6 +241,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           error: null,
           verifying2FA: false
         });
+        stopLoading("AuthProvider");
       }
     });
 

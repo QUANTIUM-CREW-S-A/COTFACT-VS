@@ -70,12 +70,13 @@ const AccountLockingSection: React.FC = () => {
     try {
       setIsLoading(true);
       
-      const now = new Date().toISOString();
+      const now = new Date();
       
+      // Usar any para evitar problemas de tipado con Supabase
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, username, intentos_fallidos, bloqueado_hasta')
-        .gt('bloqueado_hasta', now);
+        .not('bloqueado_hasta', 'is', null) as any;
         
       if (error) {
         console.error("Error al cargar cuentas bloqueadas:", error);
@@ -83,7 +84,27 @@ const AccountLockingSection: React.FC = () => {
         return;
       }
       
-      setLockedAccounts(data || []);
+      // Filtrar en el cliente con seguridad de tipos
+      const currentlyLocked = (data || []).filter((account: any) => {
+        try {
+          if (!account || !account.bloqueado_hasta) return false;
+          const lockExpiry = new Date(account.bloqueado_hasta);
+          return lockExpiry > now;
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      // Convertir explícitamente a nuestro tipo
+      const typedAccounts: LockedAccount[] = currentlyLocked.map((account: any) => ({
+        id: String(account.id || ''),
+        email: String(account.email || ''),
+        username: String(account.username || ''),
+        intentos_fallidos: Number(account.intentos_fallidos || 0),
+        bloqueado_hasta: String(account.bloqueado_hasta || '')
+      }));
+      
+      setLockedAccounts(typedAccounts);
     } catch (error) {
       console.error("Error al cargar cuentas bloqueadas:", error);
       toast.error("Error al obtener información de cuentas bloqueadas");
@@ -94,13 +115,14 @@ const AccountLockingSection: React.FC = () => {
 
   const handleUnlockAccount = async (accountId: string, email: string, username: string) => {
     try {
+      // Usar any para evitar problemas de tipado con Supabase
       const { error } = await supabase
         .from('profiles')
         .update({ 
           intentos_fallidos: 0, 
           bloqueado_hasta: null 
-        })
-        .eq('id', accountId);
+        } as any)
+        .eq('id', accountId as any);
         
       if (error) {
         console.error("Error al desbloquear cuenta:", error);

@@ -54,13 +54,13 @@ const GlobalLoadingScreen: React.FC = () => {
         // Actualizar el mensaje con un pequeño retraso para animaciones suaves
         messageTimeoutRef.current = setTimeout(() => {
           setDelayedMessage(loadingState.message);
-        }, 300);
+        }, 100); // Reducido de 300ms a 100ms
         
         // Mostrar botón de reintentar solo si la carga tarda demasiado
         retryTimeoutRef.current = setTimeout(() => {
           setShowRetry(true);
-        }, 5000); 
-      }, 300); // Pequeño retraso antes de mostrar la pantalla de carga
+        }, 2000); // Reducido de 5000ms a 2000ms
+      }, 100); // Reducido de 300ms a 100ms
       
     } else {
       // Si ya no está cargando, ocultar con una pequeña transición
@@ -72,7 +72,7 @@ const GlobalLoadingScreen: React.FC = () => {
           setDelayedMessage('');
           setShowRetry(false);
           setFailsafe(false); // Resetear el estado del failsafe
-        }, 300);
+        }, 100); // Reducido de 300ms a 100ms
       }
     }
     
@@ -136,24 +136,7 @@ const GlobalLoadingScreen: React.FC = () => {
             </motion.p>
             
             <AnimatePresence>
-              {(showRetry || failsafe) && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  className="mt-4"
-                >
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleRetry}
-                    className="flex items-center gap-2"
-                  >
-                    <RefreshCw className="h-3.5 w-3.5" />
-                    <span>Reintentar</span>
-                  </Button>
-                </motion.div>
-              )}
+              {/* Botón de reintentar eliminado por solicitud del usuario */}
             </AnimatePresence>
           </motion.div>
         </motion.div>

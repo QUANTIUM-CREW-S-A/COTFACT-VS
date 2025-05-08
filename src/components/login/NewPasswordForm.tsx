@@ -9,6 +9,8 @@ import { AlertCircle } from "lucide-react";
 import { useWindowSize } from "@/hooks/use-window-size";
 import LoadingButton from "./LoadingButton";
 import { validatePassword, getPasswordFeedback } from "@/utils/passwordValidation";
+import { useTheme } from "@/context/theme/ThemeProvider";
+import { cn } from "@/lib/utils";
 
 interface NewPasswordFormProps {
   onSubmit: (password: string) => Promise<void>;
@@ -31,6 +33,7 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
     score: number;
   }>({ strength: 'weak', feedback: '', score: 0 });
   const { width } = useWindowSize();
+  const { isDarkMode } = useTheme();
   const isDesktop = width >= 768;
 
   // Validar la contraseña mientras se escribe
@@ -109,7 +112,12 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
         )}
 
         {success ? (
-          <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-md">
+          <div className={cn(
+            "border p-4 rounded-md",
+            isDarkMode 
+              ? "bg-green-900/30 border-green-800 text-green-300" 
+              : "bg-green-50 border-green-200 text-green-700"
+          )}>
             <p className="text-sm">
               ¡Tu contraseña ha sido restablecida correctamente!
               <br />
@@ -119,10 +127,12 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
         ) : (
           <>
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700">Nueva contraseña</Label>
+              <Label htmlFor="password" className={isDarkMode ? "text-gray-200" : "text-gray-700"}>
+                Nueva contraseña
+              </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className={isDarkMode ? "h-5 w-5 text-gray-400" : "h-5 w-5 text-gray-400"} />
                 </div>
                 <Input
                   id="password"
@@ -130,7 +140,12 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
                   value={password}
                   onChange={handlePasswordChange}
                   placeholder="Ingresa tu nueva contraseña"
-                  className="pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors text-gray-800"
+                  className={cn(
+                    "pl-10 transition-colors",
+                    isDarkMode 
+                      ? "bg-gray-800 border-gray-700 focus:bg-gray-700 text-white" 
+                      : "bg-gray-50 border-gray-200 focus:bg-white text-gray-800"
+                  )}
                   required
                   autoFocus
                 />
@@ -139,17 +154,27 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
               {/* Indicador de fortaleza de contraseña */}
               {password && (
                 <div className="space-y-1 mt-2">
-                  <div className="w-full h-1.5 bg-gray-200 rounded-full">
+                  <div className={cn(
+                    "w-full h-1.5 rounded-full",
+                    isDarkMode ? "bg-gray-700" : "bg-gray-200"
+                  )}>
                     <div 
                       className={`h-1.5 rounded-full ${getStrengthColor()}`} 
                       style={{ width: `${passwordStrength.score}%` }}
                     ></div>
                   </div>
                   <div className="flex justify-between items-center text-xs">
-                    <span className="text-gray-500">Fortaleza: <span className="font-medium">{getStrengthText()}</span></span>
-                    <span className="text-gray-500">{passwordStrength.feedback}</span>
+                    <span className={isDarkMode ? "text-gray-300" : "text-gray-500"}>
+                      Fortaleza: <span className="font-medium">{getStrengthText()}</span>
+                    </span>
+                    <span className={isDarkMode ? "text-gray-300" : "text-gray-500"}>
+                      {passwordStrength.feedback}
+                    </span>
                   </div>
-                  <ul className="text-xs text-gray-600 pl-5 mt-2 space-y-1 list-disc">
+                  <ul className={cn(
+                    "text-xs pl-5 mt-2 space-y-1 list-disc",
+                    isDarkMode ? "text-gray-300" : "text-gray-600"
+                  )}>
                     <li>Al menos 8 caracteres</li>
                     <li>Al menos una letra mayúscula</li>
                     <li>Al menos una letra minúscula</li>
@@ -161,10 +186,12 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-700">Confirmar contraseña</Label>
+              <Label htmlFor="confirmPassword" className={isDarkMode ? "text-gray-200" : "text-gray-700"}>
+                Confirmar contraseña
+              </Label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className={isDarkMode ? "h-5 w-5 text-gray-400" : "h-5 w-5 text-gray-400"} />
                 </div>
                 <Input
                   id="confirmPassword"
@@ -172,7 +199,12 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirma tu nueva contraseña"
-                  className="pl-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors text-gray-800"
+                  className={cn(
+                    "pl-10 transition-colors",
+                    isDarkMode 
+                      ? "bg-gray-800 border-gray-700 focus:bg-gray-700 text-white" 
+                      : "bg-gray-50 border-gray-200 focus:bg-white text-gray-800"
+                  )}
                   required
                 />
               </div>
@@ -184,13 +216,18 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
         )}
       </CardContent>
       
-      <CardFooter className={`pb-8 flex justify-center ${isDesktop ? 'px-8' : 'px-6'}`}>
+      <CardFooter className={`pb-4 flex justify-center ${isDesktop ? 'px-8' : 'px-6'}`}>
         {success ? (
           <Button
             type="button"
             variant="default"
             onClick={onComplete}
-            className="bg-viangblue hover:bg-viangblue-dark transition-colors"
+            className={cn(
+              "transition-colors",
+              isDarkMode
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            )}
           >
             Ir al inicio de sesión
           </Button>
@@ -200,7 +237,12 @@ const NewPasswordForm: React.FC<NewPasswordFormProps> = ({
             isLoading={isLoading}
             icon={Check}
             loadingText="Actualizando..."
-            className="w-full bg-viangblue hover:bg-viangblue-dark transition-colors"
+            className={cn(
+              "w-full transition-colors",
+              isDarkMode
+                ? "bg-blue-600 hover:bg-blue-700 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            )}
             disabled={
               !password || 
               !confirmPassword || 

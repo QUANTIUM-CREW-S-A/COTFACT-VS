@@ -68,6 +68,14 @@ export const LoadingProvider: React.FC<{ children: ReactNode }> = ({ children })
   // Referencia para el intervalo de verificación de fuentes inactivas
   const cleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Referencia para mantener la última versión de sources
+  const sourcesRef = useRef<LoadingSource[]>([]);
+  
+  // Actualizar la ref cuando cambia el state
+  useEffect(() => {
+    sourcesRef.current = loadingState.sources;
+  }, [loadingState.sources]);
+
   // Activar/desactivar modo diagnóstico
   const toggleDiagnosticMode = useCallback(() => {
     setLoadingState(prev => {
@@ -177,12 +185,13 @@ export const LoadingProvider: React.FC<{ children: ReactNode }> = ({ children })
     
     // Verificar fuentes inactivas cada 5 segundos
     cleanupIntervalRef.current = setInterval(() => {
-      if (loadingState.sources.length > 0) {
+      const currentSources = sourcesRef.current;
+      if (currentSources.length > 0) {
         const now = Date.now();
         const MAX_SOURCE_AGE = 15000; // 15 segundos (más estricto que antes)
         
         // Buscar fuentes que llevan demasiado tiempo activas
-        const oldSources = loadingState.sources.filter(
+        const oldSources = currentSources.filter(
           source => now - source.startTime > MAX_SOURCE_AGE
         );
         
@@ -198,22 +207,24 @@ export const LoadingProvider: React.FC<{ children: ReactNode }> = ({ children })
           );
           
           // Filtrar solo las fuentes activas
-          const activeSources = loadingState.sources.filter(
+          const activeSources = currentSources.filter(
             source => now - source.startTime <= MAX_SOURCE_AGE
           );
           
-          // Actualizar el estado
-          setLoadingState(prev => ({
-            ...prev,
-            isLoading: activeSources.length > 0,
-            message: activeSources.length > 0 ? activeSources[activeSources.length - 1].message : '',
-            sources: activeSources
-          }));
-          
-          // Si no quedan fuentes activas después de la limpieza
-          if (activeSources.length === 0) {
-            localStorage.removeItem('loadingStartTime');
-            localStorage.removeItem('lastActiveLoadingSource');
+          // Actualizar el estado (solo si realmente hay cambios)
+          if (oldSources.length > 0) {
+            setLoadingState(prev => ({
+              ...prev,
+              isLoading: activeSources.length > 0,
+              message: activeSources.length > 0 ? activeSources[activeSources.length - 1].message : '',
+              sources: activeSources
+            }));
+            
+            // Si no quedan fuentes activas después de la limpieza
+            if (activeSources.length === 0) {
+              localStorage.removeItem('loadingStartTime');
+              localStorage.removeItem('lastActiveLoadingSource');
+            }
           }
         }
       }
@@ -225,7 +236,7 @@ export const LoadingProvider: React.FC<{ children: ReactNode }> = ({ children })
         clearInterval(cleanupIntervalRef.current);
       }
     };
-  }, [loadingState.sources]);
+  }, []); // Solo se ejecuta al montar/desmontar, no depende de loadingState.sources
 
   return (
     <LoadingContext.Provider value={{ 

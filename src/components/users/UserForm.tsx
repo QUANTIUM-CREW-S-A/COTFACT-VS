@@ -5,7 +5,7 @@ import { User, UserRole, TFAMethod } from "@/types/auth";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { UserIcon, KeyRound, UserCheck, AtSign, ShieldCheck, Shield } from "lucide-react";
+import { UserIcon, KeyRound, UserCheck, AtSign, ShieldCheck, Shield, RefreshCcw } from "lucide-react";
 import { useAuth } from "@/context/auth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -24,12 +24,14 @@ interface UserFormProps {
     tfa_habilitado?: boolean;
     tfa_metodo?: TFAMethod;
     id?: string;
+    mustChangePassword?: boolean;
   };
   currentUserId?: string;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRoleChange: (value: string) => void;
   onTfaChange?: (enabled: boolean) => void;
   onTfaMethodChange?: (method: TFAMethod) => void;
+  onMustChangePasswordChange?: (required: boolean) => void;
 }
 
 const UserForm: React.FC<UserFormProps> = ({ 
@@ -39,7 +41,8 @@ const UserForm: React.FC<UserFormProps> = ({
   onInputChange, 
   onRoleChange,
   onTfaChange,
-  onTfaMethodChange
+  onTfaMethodChange,
+  onMustChangePasswordChange
 }) => {
   const { authState } = useAuth();
   const isCurrentUser = isEditMode && userData.id && currentUserId === userData.id;
@@ -244,30 +247,48 @@ const UserForm: React.FC<UserFormProps> = ({
             />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="password" className="flex items-center gap-1">
-                <KeyRound className="h-4 w-4" /> Contraseña
-              </Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                value={userData.password || ""}
-                onChange={onInputChange}
-                placeholder="Contraseña"
-              />
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="password" className="flex items-center gap-1">
+                  <KeyRound className="h-4 w-4" /> Contraseña
+                </Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={userData.password || ""}
+                  onChange={onInputChange}
+                  placeholder="Contraseña"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  value={userData.confirmPassword || ""}
+                  onChange={onInputChange}
+                  placeholder="Confirma la contraseña"
+                />
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="confirmPassword">Confirmar Contraseña</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={userData.confirmPassword || ""}
-                onChange={onInputChange}
-                placeholder="Confirma la contraseña"
-              />
+            
+            <div className="grid gap-2 pt-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="mustChangePassword" className="flex items-center gap-1">
+                  <RefreshCcw className="h-4 w-4" /> Requerir cambio de contraseña en primer inicio de sesión
+                </Label>
+                <Switch
+                  id="mustChangePassword"
+                  checked={userData.mustChangePassword || false}
+                  onCheckedChange={onMustChangePasswordChange}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Si activas esta opción, el usuario deberá cambiar su contraseña la primera vez que inicie sesión.
+              </p>
             </div>
           </div>
         )}

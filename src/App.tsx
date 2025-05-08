@@ -5,7 +5,7 @@
  * - Incluye protección de rutas para requerir autenticación.
  * - Renderiza la barra lateral, notificaciones y el instalador PWA.
  */
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { Toaster } from "sonner";
 
 // Pages
@@ -19,6 +19,7 @@ import SettingsPage from "./pages/SettingsPage";
 import CustomersPage from "./pages/CustomersPage";
 import ExportPage from "./pages/ExportPage";
 import NotFound from "./pages/NotFound";
+import ForcePasswordChangePage from "./pages/ForcePasswordChangePage";
 
 // Components
 import Sidebar from "./components/Sidebar";
@@ -38,19 +39,42 @@ import { useState, useEffect } from "react";
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { authState } = useAuth();
-  const { startLoading, stopLoading } = useLoading();
-  
+  const { startLoading, stopLoading, isLoading: isGlobalLoading } = useLoading(); // Use global loading state
+
   useEffect(() => {
+    // This effect now primarily manages global loading indicators based on authState.isLoading
     if (authState.isLoading) {
-      startLoading("Iniciando sesión", "auth");
+      startLoading("Verificando autenticación", "auth-check");
     } else {
-      stopLoading("auth");
+      stopLoading("auth-check");
     }
+    // Ensure to clean up this specific loading task when the component unmounts or dependencies change
+    return () => {
+      stopLoading("auth-check");
+    };
   }, [authState.isLoading, startLoading, stopLoading]);
 
-  // Solo redirigir si no está autenticado y no está cargando
-  if (!authState.isAuthenticated && !authState.isLoading) {
+  // While authState is loading, show a loading screen or nothing to prevent premature redirects
+  if (authState.isLoading) {
+    // Optionally, return a dedicated loading component here, e.g., <LoadingScreen />
+    // For now, returning null to prevent rendering children or redirecting prematurely.
+    // The GlobalLoadingScreen should be active due to the startLoading call above.
+    return null; 
+  }
+
+  // If not loading and not authenticated, then redirect to login
+  if (!authState.isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  
+  // If authenticated and password change is required, redirect to password change page
+  // This check should ideally be inside the protected area or handled by specific page logic
+  // if it's not a global requirement for all protected routes after this point.
+  if (authState.passwordChangeRequired) {
+    // Check if already on the password-change page to prevent redirect loop
+    if (window.location.pathname !== "/password-change") {
+      return <Navigate to="/password-change" replace />;
+    }
   }
 
   return <>{children}</>;
@@ -58,7 +82,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   const isMobile = useIsMobile();
-  const { authState } = useAuth();
+  const { authState } = useAuth(); // authState is used for conditional rendering of login/dashboard
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
@@ -73,36 +97,43 @@ function App() {
             <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
               <Routes>
                 <Route path="/login" element={
-                  authState.isAuthenticated ? 
+                  // If auth is still loading, LoginPage might flash, consider authState.isLoading here too
+                  // However, usually, you want to show LoginPage or redirect immediately based on isAuthenticated
+                  authState.isAuthenticated && !authState.isLoading ? 
                     <Navigate to="/dashboard" replace /> : 
                     <LoginPage />
                 } />
                 
-                <Route path="/*" element={
-                  <ProtectedRoute>
-                    <div className="flex h-screen w-full overflow-hidden">
-                      <Sidebar />
-                      <div className="flex-1 overflow-auto flex flex-col">
-                        <TopNavbar mobileNavOpen={mobileNavOpen} setMobileNavOpen={setMobileNavOpen} />
-                        <div className="mx-auto w-full max-w-full px-3 sm:px-5 md:px-8 lg:px-10 xl:px-12 py-4 flex-1">
-                          <Routes>
-                            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                            <Route path="/dashboard" element={<DashboardPage />} />
-                            <Route path="/quotes" element={<QuotesPage />} />
-                            <Route path="/invoices" element={<InvoicesPage />} />
-                            <Route path="/document/:id" element={<DocumentDetailPage />} />
-                            <Route path="/create/:type" element={<CreateDocumentPage />} />
-                            <Route path="/edit/:id" element={<CreateDocumentPage />} />
-                            <Route path="/settings" element={<SettingsPage />} />
-                            <Route path="/customers" element={<CustomersPage />} />
-                            <Route path="/export" element={<ExportPage />} />
-                            <Route path="*" element={<NotFound />} />
-                          </Routes>
-                        </div>
-                      </div>
-                    </div>
-                  </ProtectedRoute>
+                <Route path="/password-change" element={
+                  // This route should be protected, or handle authState.isLoading
+                  // If auth is loading, ForcePasswordChangePage might render prematurely or user is redirected to login
+                  authState.isLoading ? null : // Wait if auth is loading
+                  !authState.isAuthenticated ? 
+                    <Navigate to="/login" replace /> :
+                    !authState.passwordChangeRequired ?
+                      <Navigate to="/dashboard" replace /> :
+                      <ForcePasswordChangePage />
                 } />
+                
+                {/* Contenedor para rutas protegidas */}
+                <Route element={<ProtectedRoute> <Outlet /> </ProtectedRoute>}>
+                  {/* Rutas protegidas individuales */}
+                  {/* The Outlet inside ProtectedRoute will render these child routes */}
+                  <Route index element={<Navigate to="/dashboard" replace />} />
+                  <Route path="dashboard" element={<DashboardPage />} />
+                  <Route path="quotes" element={<QuotesPage />} />
+                  <Route path="invoices" element={<InvoicesPage />} />
+                  <Route path="document/:id" element={<DocumentDetailPage />} />
+                  <Route path="create/:type" element={<CreateDocumentPage />} />
+                  <Route path="edit/:id" element={<CreateDocumentPage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+                  <Route path="customers" element={<CustomersPage />} />
+                  <Route path="export" element={<ExportPage />} />
+                  {/* NotFound should be outside or also handled by ProtectedRoute if it's a protected 404 */}
+                  {/* For a public 404, it should be outside this group */}
+                </Route>
+                {/* Public NotFound Route - if a user types a non-existent path and is not necessarily going through protected routes */}
+                <Route path="*" element={<NotFound />} /> 
               </Routes>
             </div>
             <Toaster position={isMobile ? "bottom-center" : "top-right"} />

@@ -23,6 +23,7 @@ interface UserDialogsProps {
     role: UserRole;
     tfa_habilitado?: boolean;
     tfa_metodo?: TFAMethod;
+    mustChangePassword?: boolean;
   };
   editUserData: User | null;
   currentUserId?: string;
@@ -32,6 +33,7 @@ interface UserDialogsProps {
   onEditRoleChange: (value: string) => void;
   onEditTfaChange?: (enabled: boolean) => void;
   onEditTfaMethodChange?: (method: TFAMethod) => void;
+  onAddMustChangePasswordChange?: (required: boolean) => void;
   onAddUser: () => void;
   onEditUser: () => void;
 }
@@ -51,6 +53,7 @@ export const UserDialogs: React.FC<UserDialogsProps> = ({
   onEditRoleChange,
   onEditTfaChange,
   onEditTfaMethodChange,
+  onAddMustChangePasswordChange,
   onAddUser,
   onEditUser
 }) => {
@@ -72,7 +75,8 @@ export const UserDialogs: React.FC<UserDialogsProps> = ({
                 userData={newUserData} 
                 currentUserId={currentUserId}
                 onInputChange={onAddInputChange} 
-                onRoleChange={onAddRoleChange} 
+                onRoleChange={onAddRoleChange}
+                onMustChangePasswordChange={onAddMustChangePasswordChange}
               />
             </div>
             <DrawerFooter className="pt-4">
@@ -101,7 +105,8 @@ export const UserDialogs: React.FC<UserDialogsProps> = ({
                 userData={newUserData} 
                 currentUserId={currentUserId}
                 onInputChange={onAddInputChange} 
-                onRoleChange={onAddRoleChange} 
+                onRoleChange={onAddRoleChange}
+                onMustChangePasswordChange={onAddMustChangePasswordChange}
               />
             </div>
             <DialogFooter>

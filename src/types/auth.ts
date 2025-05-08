@@ -33,6 +33,10 @@ export interface User {
   creado_por?: string;
   ultima_modificacion: string;
   modificado_por?: string;
+  
+  // Campo para indicar si debe cambiar la contraseña
+  mustChangePassword?: boolean;
+  password_changed?: boolean;
 }
 
 export interface AuthState {
@@ -42,4 +46,5 @@ export interface AuthState {
   error: string | null;
   verifying2FA: boolean;
   pendingUser?: Omit<User, 'twoFactorSecret' | 'tfa_secret' | 'tfa_backup_codes'>;
+  passwordChangeRequired?: boolean;
 }

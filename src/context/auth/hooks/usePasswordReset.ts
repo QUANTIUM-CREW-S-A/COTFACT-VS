@@ -44,14 +44,23 @@ export const usePasswordReset = () => {
   const updatePassword = async (newPassword: string): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
-    
     try {
-      const { error } = await supabase.auth.updateUser({
+      // Actualizar la contraseña en Supabase Auth
+      const { data: user, error } = await supabase.auth.updateUser({
         password: newPassword
       });
-      
       if (error) throw error;
-      
+
+      // Si el usuario está autenticado, actualizar el perfil en la tabla profiles
+      const session = supabase.auth.getSession ? await supabase.auth.getSession() : null;
+      const userId = session?.data?.session?.user?.id || supabase.auth.user()?.id;
+      if (userId) {
+        // Actualizar flags de cambio de contraseña en el perfil
+        await supabase.from('profiles').update({
+          must_change_password: false,
+          password_changed: true
+        }).eq('id', userId);
+      }
       toast.success("Contraseña actualizada correctamente");
       return true;
     } catch (err) {

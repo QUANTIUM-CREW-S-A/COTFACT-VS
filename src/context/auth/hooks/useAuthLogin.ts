@@ -1,5 +1,5 @@
 import { AuthState } from "../types";
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { User, UserRole } from "@/types/auth";
@@ -58,65 +58,129 @@ export const useAuthLogin = ({ authState, setAuthState }: UseAuthLoginProps) => 
     }
   };
 
+  // Verificar y manejar la redirección para cambio de contraseña
+  const handleNeedsPasswordChange = useCallback((profile: any, isDefaultAdmin: boolean) => {
+    // Siempre retornamos false para no requerir cambio de contraseña
+    toast.success(`Bienvenido, ${profile.full_name || profile.username}`);
+    return false;
+  }, []);
+
   const login = async (username: string, password: string): Promise<boolean> => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const email = username === 'admin' ? 'admin@example.com' : username.includes('@') ? username : `${username}@example.com`;
-
-      // Verificar si es el primer inicio de sesión
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      const isFirstLogin = count === 0;
-
-      // Primera vez que se ejecuta la aplicación - crear usuario administrador
-      if (isFirstLogin && username === 'admin' && password === 'admin123') {
-        console.log("First time setup - creating root user");
-
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              username: "admin",
-              full_name: "Administrator",
-              role: "root"
-            }
-          }
-        });
-
-        if (signUpError) throw signUpError;
-        if (!authData.user) throw new Error('No se pudo crear el usuario');
-
-        await createInitialProfile(authData.user.id);
-
-        setAuthState({
-          currentUser: {
-            id: authData.user.id,
-            username: "admin",
-            fullName: "Administrator",
-            email: authData.user.email!,
-            role: "root",
-            createdAt: new Date().toISOString(),
-            lastLogin: new Date().toISOString(),
-            twoFactorEnabled: false,
-            intentos_fallidos: 0,
-            bloqueado_hasta: null
-          } as User,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-          verifying2FA: false
-        });
-
-        toast.success('Bienvenido, Administrador');
-        return true;
+      // Caso especial para el usuario administrador predeterminado
+      const isDefaultAdmin = (username === 'admin' && password === 'admin123') || 
+                            (username === 'admin@example.com' && password === 'admin123');
+      
+      if (username === 'admin') {
+        username = 'admin@example.com';
       }
 
-      // Si no es el primer inicio, o si no es admin/admin123, intento normal de login
-      
+      // Determinar si el input es un correo electrónico o un nombre de usuario
+      const isEmail = username.includes('@');
+      let email = username; // Por defecto asumimos que es un email
+
+      // Si NO es un correo electrónico, buscamos el perfil por nombre de usuario
+      if (!isEmail) {
+        console.log("Buscando usuario por nombre de usuario:", username);
+        
+        // Buscar el correo asociado al nombre de usuario en la tabla profiles
+        const { data: userData, error: userError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', username)
+          .maybeSingle();
+          
+        if (userError) {
+          console.error("Error al buscar usuario:", userError);
+          throw new Error("Error al buscar usuario");
+        }
+        
+        // Si encontramos al usuario por su username, usamos su email para la autenticación
+        if (userData?.email) {
+          console.log("Usuario encontrado, usando email:", userData.email);
+          email = userData.email;
+        } else {
+          // Verificamos si intentan acceder con admin pero el usuario no existe aún
+          if (isDefaultAdmin) {
+            // Crear el usuario administrador predeterminado
+            console.log("Creando usuario administrador predeterminado");
+            const { data: authData, error: signUpError } = await supabase.auth.signUp({
+              email: 'admin@example.com',
+              password: 'admin123',
+              options: {
+                data: {
+                  username: "admin",
+                  full_name: "Administrator",
+                  role: "root"
+                }
+              }
+            });
+
+            if (signUpError) {
+              console.error("Error al crear usuario admin:", signUpError);
+              throw new Error("No se pudo crear el usuario administrador predeterminado");
+            }
+
+            if (!authData.user) {
+              throw new Error('No se pudo crear el usuario administrador');
+            }
+
+            await createInitialProfile(authData.user.id);
+
+            setAuthState({
+              currentUser: {
+                id: authData.user.id,
+                username: "admin",
+                fullName: "Administrator",
+                email: authData.user.email!,
+                role: "root",
+                createdAt: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                twoFactorEnabled: false,
+                intentos_fallidos: 0,
+                bloqueado_hasta: null,
+                mustChangePassword: true // Marcar que debe cambiar la contraseña
+              } as User,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+              verifying2FA: false,
+              passwordChangeRequired: true // Nuevo flag para requerir cambio de contraseña
+            });
+
+            await logActivity(
+              'user_created',
+              'Usuario administrador predeterminado creado',
+              'info',
+              { username: 'admin', role: 'root' }
+            );
+
+            toast.success('Usuario administrador creado. Por favor cambia tu contraseña.');
+            return true;
+          }
+
+          // Si no se encuentra el usuario (y no es el caso especial admin), mostramos mensaje
+          setAuthState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: "No se encuentra ningún usuario con estas credenciales. Contacte al administrador."
+          }));
+          toast.error("No se encuentra ningún usuario con estas credenciales. Contacte al administrador.");
+          
+          // Registrar intento de acceso con usuario inexistente
+          await logActivity(
+            'failed_login',
+            `Intento de acceso con usuario inexistente: ${username}`,
+            'warning',
+            { username }
+          );
+          
+          return false;
+        }
+      }
+
       // Verificar si la cuenta está bloqueada
       const { locked, remainingMinutes } = await isAccountLocked(email);
       
@@ -150,8 +214,8 @@ export const useAuthLogin = ({ authState, setAuthState }: UseAuthLoginProps) => 
       if (signInError) {
         // Si el error es "User already registered", intentar iniciar sesión directamente
         // Este error ocurre cuando se usa admin/admin123 y el usuario ya existe
-        if (signInError.message?.includes('already registered') && username === 'admin' && password === 'admin123') {
-          console.log("Usuario ya registrado, intentando iniciar sesión directamente");
+        if (signInError.message?.includes('already registered') && isDefaultAdmin) {
+          console.log("Usuario admin ya registrado, intentando iniciar sesión directamente");
           return await login('admin@example.com', password);
         }
         
@@ -222,6 +286,10 @@ export const useAuthLogin = ({ authState, setAuthState }: UseAuthLoginProps) => 
           })
           .eq('id', data.user.id);
 
+        // Verificar si necesita cambio de contraseña y manejarlo
+        const needsPasswordChange = handleNeedsPasswordChange(profile, isDefaultAdmin);
+        
+        // Establecer el estado de autenticación
         setAuthState({
           currentUser: {
             id: profile.id,
@@ -235,12 +303,14 @@ export const useAuthLogin = ({ authState, setAuthState }: UseAuthLoginProps) => 
             twoFactorSecret: profile.two_factor_secret,
             // Añadir datos de bloqueo
             intentos_fallidos: 0,
-            bloqueado_hasta: null
+            bloqueado_hasta: null,
+            mustChangePassword: needsPasswordChange
           } as User,
           isAuthenticated: true,
           isLoading: false,
           error: null,
-          verifying2FA: false
+          verifying2FA: false,
+          passwordChangeRequired: needsPasswordChange
         });
 
         // Registrar inicio de sesión exitoso
@@ -251,7 +321,6 @@ export const useAuthLogin = ({ authState, setAuthState }: UseAuthLoginProps) => 
           { username: profile.username, role: userRole }
         );
 
-        toast.success(`Bienvenido, ${profile.full_name}`);
         return true;
       }
 

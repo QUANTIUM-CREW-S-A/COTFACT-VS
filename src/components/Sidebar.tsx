@@ -4,6 +4,7 @@ import { useAuth } from '@/context/auth';
 import { useWindowSize } from '@/hooks/use-window-size';
 import MobileBottomNav from './MobileBottomNav';
 import DesktopSidebar from './DesktopSidebar';
+import { useLoading } from '@/context/loading/LoadingContext';
 
 /*
  * Componente Sidebar (barra lateral de navegación).
@@ -14,6 +15,7 @@ const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { authState, logout } = useAuth();
+  const { loadingState } = useLoading();
   const [collapsed, setCollapsed] = useState(false);
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
   
@@ -21,12 +23,12 @@ const Sidebar = () => {
   const isMobile = width < 768;
   
   useEffect(() => {
-    // Verificar autenticación al montar el componente
-    if (!authState?.isAuthenticated && location.pathname !== '/login') {
+    // Solo redirigir si la autenticación terminó de cargar
+    if (!authState?.isAuthenticated && !authState?.isLoading && !loadingState.isLoading && location.pathname !== '/login') {
       console.log("Sidebar: Usuario no autenticado, redirigiendo a login");
       navigate('/login');
     }
-  }, [authState?.isAuthenticated, navigate, location.pathname]);
+  }, [authState?.isAuthenticated, authState?.isLoading, loadingState.isLoading, navigate, location.pathname]);
 
   useEffect(() => {
     setOpenMobileMenu(false);
@@ -46,8 +48,8 @@ const Sidebar = () => {
     navigate('/export');
   };
 
-  // Si el usuario no está autenticado, no renderizamos el sidebar
-  if (!authState?.isAuthenticated) {
+  // Si el usuario no está autenticado y no está cargando, no renderizamos el sidebar
+  if (!authState?.isAuthenticated && !authState?.isLoading && !loadingState.isLoading) {
     return null;
   }
 

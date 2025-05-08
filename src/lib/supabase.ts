@@ -9,32 +9,41 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase credentials')
 }
 
-// Single client instance for normal operations
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    storageKey: 'cotfact-auth',
-    detectSessionInUrl: true,
-    flowType: 'pkce'
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    },
-    debug: false // Deshabilitar los registros de depuración de realtime
-  },
-  logger: {
-    level: 'error' // Solo mostrar errores, no información ni advertencias
-  }
-})
+// Garantizar singleton incluso en hot reload/desarrollo
+const globalForSupabase = typeof window !== 'undefined' ? (window as any) : globalThis;
 
-// Admin client for administrative operations
-export const supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-    storageKey: 'cotfact-auth-admin'
-  }
-})
+if (!globalForSupabase.__cotfact_supabase) {
+  globalForSupabase.__cotfact_supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'cotfact-auth',
+      detectSessionInUrl: true,
+      flowType: 'pkce'
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 10
+      },
+      debug: false // Deshabilitar los registros de depuración de realtime
+    },
+    logger: {
+      level: 'error' // Solo mostrar errores, no información ni advertencias
+    }
+  });
+}
+
+export const supabase = globalForSupabase.__cotfact_supabase;
+
+if (!globalForSupabase.__cotfact_supabaseAdmin) {
+  globalForSupabase.__cotfact_supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      storageKey: 'cotfact-auth-admin'
+    }
+  });
+}
+
+export const supabaseAdmin = globalForSupabase.__cotfact_supabaseAdmin;
