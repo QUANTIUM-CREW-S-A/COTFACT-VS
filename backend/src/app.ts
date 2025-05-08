@@ -1,8 +1,14 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import helmet from 'helmet';
+import { Request, Response, NextFunction } from 'express';
 import { registerRoutes } from './routes/index';
 import { connectToDatabase } from './db/connection';
+import { sanitizeInputs } from './middleware/validationMiddleware';
+import { rateLimiters } from './middleware/rateLimitMiddleware';
+import { securityHeaders, requestTimeout, apiUsageTracking, logUnauthorizedAccessMiddleware } from './middleware/securityMiddleware';
+import path from 'path';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -10,6 +16,16 @@ dotenv.config();
 const app = express();
 const initialPort = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 let port = initialPort;
+
+// Security enhancements
+// Apply helmet for basic security headers
+app.use(helmet());
+
+// Apply custom security headers
+app.use(securityHeaders());
+
+// Add request timeout to prevent hanging connections
+app.use(requestTimeout(30000)); // 30 seconds timeout
 
 // Configuración CORS mejorada para asegurar conexión con el frontend
 const corsOptions = {
@@ -47,7 +63,27 @@ app.use((req, res, next) => {
   next();
 });
 
+// Parse JSON and apply input sanitization
 app.use(express.json());
+app.use(sanitizeInputs());
+
+// Apply general rate limiting to all routes
+app.use(rateLimiters.api);
+
+// Apply specific rate limiting to authentication routes
+app.use('/api/auth', rateLimiters.auth);
+app.use('/api/auth/password/reset-request', rateLimiters.passwordReset);
+
+// API usage tracking
+app.use(apiUsageTracking());
+
+// Ensure logs directory exists
+const logDir = path.join(__dirname, '..', 'logs');
+try {
+  require('fs').mkdirSync(logDir, { recursive: true });
+} catch (error) {
+  console.warn(`Could not create logs directory: ${error}`);
+}
 
 // Endpoint de health check para verificar si el servidor está activo
 app.get('/', (req, res) => {
@@ -79,6 +115,30 @@ app.get('/api/health', (req, res) => {
 
 // Registrar rutas
 registerRoutes(app);
+
+// Error handling middleware
+app.use(logUnauthorizedAccessMiddleware());
+
+// 404 handler
+app.use((req: Request, res: Response) => {
+  res.status(404).json({ 
+    error: 'Not Found',
+    message: `The requested resource '${req.path}' was not found on this server`
+  });
+});
+
+// Global error handler with proper TypeScript types
+app.use((err: Error & { statusCode?: number }, req: Request, res: Response, next: NextFunction) => {
+  const statusCode = err.statusCode || 500;
+  console.error(`Error ${statusCode}: ${err.message}`);
+  
+  // Don't leak error details in production
+  const errorResponse = process.env.NODE_ENV === 'production'
+    ? { error: 'Internal Server Error' }
+    : { error: err.message, stack: err.stack };
+  
+  res.status(statusCode).json(errorResponse);
+});
 
 // Function to try starting server on a given port
 const tryListenOnPort = (attemptPort: number): Promise<number> => {
