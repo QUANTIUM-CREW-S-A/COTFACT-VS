@@ -1,6 +1,9 @@
 // Servicio para manejar las peticiones a la API utilizando Supabase
 
 import { Document, Customer, CompanyInfo, TemplatePreferences, PaymentMethod } from '@/types';
+
+// Extend Partial<Document> to include user_id
+type DocumentWithUserId = Partial<Document> & { user_id?: string };
 import { supabase } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -96,7 +99,7 @@ export const getDocumentById = async (id: string) => {
   } catch (error) {
     console.error(`Error en getDocumentById:`, error);
     throw error;
-  }
+export const createDocument = async (document: DocumentWithUserId): Promise<DocumentDB> => {
 };
 
 export const createDocument = async (document: Partial<Document>): Promise<DocumentDB> => {

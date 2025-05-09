@@ -51,7 +51,39 @@ export const DocumentProvider = ({ children }) => {
   const DOCUMENT_SOURCE_ID = 'document-context-global';
 
   // Helper function to format documents from DB
-  const formatDocumentFromDB = (doc: any): Document => {
+  const formatDocumentFromDB = (doc: {
+    id: string;
+    document_number: string;
+    date?: string;
+    customer?: {
+      id?: string;
+      name?: string;
+      company?: string;
+      address?: {
+        company?: string;
+        location?: string;
+      };
+      email?: string;
+      phone?: string;
+      type?: string;
+    };
+    items?: Array<{
+      id?: string;
+      description?: string;
+      quantity?: number;
+      unitPrice?: number;
+      total?: number;
+    }>;
+    tax?: number;
+    total?: number;
+    status?: string;
+    type?: string;
+    expire_date?: string;
+    terms_conditions?: string | string[];
+    payment_methods?: string[];
+    created_at?: string;
+    updated_at?: string;
+  }): Document => {
     // Extract or create customer data
     let customer = { name: '', company: '', location: '', email: '', phone: '', id: '', type: 'business' as const };
     if (doc.customer) {
@@ -334,7 +366,17 @@ export const DocumentProvider = ({ children }) => {
 
   const updateDocument = useCallback(async (id: string, document: Partial<Document>) => {
     try {
-      const documentForDB: any = {};
+      const documentForDB: Partial<{
+        document_number: string;
+        date: string;
+        customer: typeof document.customer;
+        items: typeof document.items;
+        total: number;
+        status: string;
+        type: string;
+        expire_date: string;
+        terms_conditions: string;
+      }> = {};
       
       if (document.documentNumber) documentForDB.document_number = document.documentNumber;
       if (document.date) documentForDB.date = document.date;
@@ -495,6 +537,11 @@ export const DocumentProvider = ({ children }) => {
     customers: [], // Se actualizará por el CustomerProvider
     companyInfo: {}, // Se actualizará por otro provider
     templatePreferences: {}, // Se actualizará por otro provider
+    setCustomers: () => {}, // Placeholder function
+    setCompanyInfo: () => {}, // Placeholder function
+    setTemplatePreferences: () => {}, // Placeholder function
+    updateCompanyInfo: async () => {}, // Placeholder async function
+    updateTemplatePreferences: async () => {}, // Placeholder async function
 
     // Implementación de addCustomer con adaptador para la API
     addCustomer: async (customerData) => {
