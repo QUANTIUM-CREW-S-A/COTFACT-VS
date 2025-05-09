@@ -100,22 +100,42 @@ export const apiUsageTracking = () => {
     // Track start time
     const startTime = process.hrtime();
     
-    // Track response size
+    // Use on-finished module pattern to avoid issues with response handling
     const originalEnd = res.end;
     let responseSize = 0;
     
-    res.end = function(chunk?: any, ...args: any[]) {
+    // Override the end method to track response size - with improved safety handling
+    res.end = function(this: Response, chunk?: any, encodingOrCb?: any, callback?: any): Response {
+      // Only track chunk size if it exists
       if (chunk) {
-        const size = chunk instanceof Buffer ? chunk.length : Buffer.byteLength(chunk);
-        responseSize += size;
+        try {
+          // Safely calculate size based on chunk type
+          if (Buffer.isBuffer(chunk)) {
+            responseSize += chunk.length;
+          } else if (typeof chunk === 'string') {
+            // Lista de codificaciones válidas para validar
+            const validEncodings: BufferEncoding[] = ['utf8', 'ascii', 'utf16le', 'ucs2', 'base64', 'latin1', 'binary', 'hex'];
+            // Determinar la codificación final de forma segura
+            const encoding: BufferEncoding = typeof encodingOrCb === 'string' && validEncodings.includes(encodingOrCb as BufferEncoding)
+              ? encodingOrCb as BufferEncoding
+              : 'utf8';
+              
+            responseSize += Buffer.byteLength(chunk, encoding);
+          }
+          // For other types, we'll skip size calculation
+        } catch (err) {
+          // Silent catch to prevent response failures
+          console.error('Error calculating response size:', err);
+        }
       }
       
       // Calculate response time
       const hrtime = process.hrtime(startTime);
       const responseTimeMs = hrtime[0] * 1000 + hrtime[1] / 1000000;
       
-      // Log API usage (only for non-static resources)
-      if (!req.path.match(/\.(js|css|html|svg|png|jpg|jpeg|gif|ico)$/i)) {
+      // Skip logging for static resources and healthcheck
+      if (!req.path.match(/\.(js|css|html|svg|png|jpg|jpeg|gif|ico)$/i) && 
+          !req.path.includes('/health')) {
         const logData = {
           path: req.path,
           method: req.method,
@@ -125,14 +145,14 @@ export const apiUsageTracking = () => {
           userId: req.user?.id || 'anonymous'
         };
         
-        // Normally would log to a database or analytics system
-        // For now, just log to console in development
+        // Log in development, could send to monitoring service in production
         if (process.env.NODE_ENV !== 'production') {
           console.log('[API Usage]', logData);
         }
       }
       
-      return originalEnd.apply(res, [chunk, ...args]);
+      // Call the original end method with all arguments
+      return originalEnd.apply(this, arguments as any);
     };
     
     next();

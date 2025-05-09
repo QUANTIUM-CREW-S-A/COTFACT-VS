@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useDocuments } from "@/context/document/document-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Download, FileText, FileSpreadsheet, FileJson } from "lucide-react";
+import { Download, FileText, FileSpreadsheet, FileJson, FileOutput } from "lucide-react";
 import { toast } from "sonner";
-import { exportToPDF, exportToCSV } from "@/utils/documentExport";
+import { exportToPDF, exportToCSV, exportDocumentsAsPDF } from "@/utils/documentExport";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ExportFilters from "./ExportFilters";
 import ExportOptions from "./ExportOptions";
@@ -87,6 +87,19 @@ const DocumentExportDialog: React.FC<DocumentExportDialogProps> = ({
       setExporting(false);
       if (onExportComplete) onExportComplete();
     }
+  };
+
+  // Export document designs as PDF
+  const handleExportDocumentDesigns = () => {
+    // Confirm with the user if they're exporting a lot of documents
+    if (filteredDocuments.length > 10) {
+      const proceed = window.confirm(
+        `Estás a punto de exportar ${filteredDocuments.length} documentos completos. Este proceso puede tardar varios minutos. ¿Deseas continuar?`
+      );
+      if (!proceed) return;
+    }
+    
+    handleExport(exportDocumentsAsPDF, "PDF (documentos completos)");
   };
 
   // Export to PDF
@@ -200,7 +213,7 @@ const DocumentExportDialog: React.FC<DocumentExportDialogProps> = ({
                       {filteredDocuments.slice(0, 5).map((doc, index) => (
                         <div key={index} className="text-xs bg-background p-2 rounded-md mb-2 border flex justify-between">
                           <div>
-                            <span className="font-medium">{doc.title || doc.id}</span>
+                            <span className="font-medium">{doc.title || doc.documentNumber || doc.id}</span>
                             <span className="text-muted-foreground ml-2">{new Date(doc.date).toLocaleDateString()}</span>
                           </div>
                           <span className={`px-1.5 py-0.5 rounded-full text-xs ${
@@ -208,7 +221,8 @@ const DocumentExportDialog: React.FC<DocumentExportDialogProps> = ({
                             doc.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' : 
                             'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300'
                           }`}>
-                            {doc.status}
+                            {doc.status === 'approved' ? 'Aprobado' : 
+                             doc.status === 'pending' ? 'Pendiente' : 'Borrador'}
                           </span>
                         </div>
                       ))}
@@ -255,7 +269,17 @@ const DocumentExportDialog: React.FC<DocumentExportDialogProps> = ({
               <div className="space-y-4">
                 <h4 className="text-sm font-medium">Selecciona el formato de exportación</h4>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={handleExportDocumentDesigns}
+                    disabled={exporting || filteredDocuments.length === 0}
+                    className="flex flex-col items-center justify-center h-24 hover:bg-accent hover:text-accent-foreground transition-all"
+                  >
+                    <FileOutput className="h-8 w-8 mb-2 text-blue-600" />
+                    <span className="font-medium">Documentos Completos</span>
+                  </Button>
+                  
                   <Button
                     variant="outline"
                     onClick={handleExportToPDF}
@@ -291,6 +315,7 @@ const DocumentExportDialog: React.FC<DocumentExportDialogProps> = ({
                   onExportToPDF={handleExportToPDF}
                   onExportToCSV={handleExportToCSV}
                   onExportToJSON={handleExportToJSON}
+                  onExportDocumentDesigns={handleExportDocumentDesigns}
                   exporting={exporting}
                   hasDocuments={filteredDocuments.length > 0}
                   className="mt-4"

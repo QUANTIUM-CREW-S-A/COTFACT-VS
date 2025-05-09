@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
-import { useDocuments } from "@/context/document/document-context";
+import { useDocuments } from "@/hooks/use-documents-context";
 import { Document, LineItem, Customer } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,13 +63,13 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ type, editId }) => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { 
-    documents, 
+    documents = [], 
     addDocument, 
     updateDocument, 
     getNextDocumentNumber,
-    customers,
+    customers = [], // Proporcionar un valor por defecto para evitar errores
     addCustomer
-  } = useDocuments();
+  } = useDocuments() || {}; // Añadir operador OR con objeto vacío para evitar errores de desestructuración
 
   const [activeTab, setActiveTab] = useState("form");
   const [editingDocument, setEditingDocument] = useState<Document | null>(null);
@@ -220,8 +220,7 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ type, editId }) => {
     
     const currentDate = new Date().toISOString();
 
-    const documentData: Document = {
-      id: editingDocument ? editingDocument.id : uuidv4(),
+    const documentData: Omit<Document, 'id'> = {
       documentNumber: editingDocument ? editingDocument.documentNumber : getNextDocumentNumber(type),
       date,
       customer,
@@ -238,13 +237,19 @@ const DocumentForm: React.FC<DocumentFormProps> = ({ type, editId }) => {
       updatedAt: currentDate
     };
 
-    if (editingDocument) {
-      updateDocument(editingDocument.id, documentData);
-    } else {
-      addDocument(documentData);
+    try {
+      if (editingDocument) {
+        updateDocument(editingDocument.id, documentData);
+        toast.success(`${type === "quote" ? 'Cotización' : 'Factura'} actualizada exitosamente`);
+      } else {
+        addDocument(documentData);
+        toast.success(`${type === "quote" ? 'Cotización' : 'Factura'} creada exitosamente`);
+      }
+      navigate(type === "quote" ? "/" : "/invoices");
+    } catch (error) {
+      console.error('Error al guardar documento:', error);
+      toast.error(`Error al ${editingDocument ? 'actualizar' : 'crear'} ${type === "quote" ? 'cotización' : 'factura'}`);
     }
-
-    navigate(type === "quote" ? "/" : "/invoices");
   };
 
   const previewDocument = () => {

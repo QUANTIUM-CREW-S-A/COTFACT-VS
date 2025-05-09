@@ -7,7 +7,7 @@ import {
   FileTerminal, 
   FileText
 } from "lucide-react";
-import { useDocuments } from '@/context/document/document-context';
+import { useDocuments } from '@/hooks/use-documents-context';
 import { useSettingsOperations } from '@/hooks/use-settings-operations';
 import { Document } from '@/types';
 import { Separator } from '@/components/ui/separator';

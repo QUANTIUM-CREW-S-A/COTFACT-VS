@@ -1,7 +1,9 @@
 import { createContext, useContext } from 'react';
-import { DocumentContextValue } from './types';
+import { DocumentContextValue } from '../types';
+import DocumentContext from './DocumentContext';
 
-export const DocumentContext = createContext<DocumentContextValue>({} as DocumentContextValue);
+// El contexto ya está exportado desde './DocumentContext'
+// No necesitamos crearlo de nuevo, solo exportar el hook useDocuments
 
 export const useDocuments = () => {
   const context = useContext(DocumentContext);

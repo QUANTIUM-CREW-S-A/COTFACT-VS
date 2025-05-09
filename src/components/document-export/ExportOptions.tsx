@@ -1,5 +1,5 @@
 import React from "react";
-import { FileIcon, FileText, FileSpreadsheet, FileJson, Download } from "lucide-react";
+import { FileIcon, FileText, FileSpreadsheet, FileJson, Download, FileOutput } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -9,6 +9,7 @@ interface ExportOptionsProps {
   onExportToPDF: () => void;
   onExportToCSV: () => void;
   onExportToJSON?: () => void;
+  onExportDocumentDesigns?: () => void; // New prop for document designs export
   exporting: boolean;
   hasDocuments: boolean;
   className?: string;
@@ -18,6 +19,7 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
   onExportToPDF,
   onExportToCSV,
   onExportToJSON,
+  onExportDocumentDesigns,
   exporting,
   hasDocuments,
   className,
@@ -25,7 +27,21 @@ const ExportOptions: React.FC<ExportOptionsProps> = ({
   const isMobile = useIsMobile();
 
   return (
-    <div className={cn(`grid grid-cols-1 ${isMobile ? 'gap-3' : 'md:grid-cols-3 gap-4'}`, className)}>
+    <div className={cn(`grid grid-cols-1 ${isMobile ? 'gap-3' : 'md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'}`, className)}>
+      {/* Document designs export option */}
+      {onExportDocumentDesigns && (
+        <ExportCard 
+          title="Documentos Completos"
+          description="Exporta los diseños reales de los documentos"
+          icon={<FileOutput className="h-10 w-10 text-blue-600 mb-2" />}
+          buttonText={exporting ? "Exportando..." : "Exportar Documentos"}
+          buttonAction={onExportDocumentDesigns}
+          disabled={exporting || !hasDocuments}
+          colorScheme="blue"
+          isMobile={isMobile}
+        />
+      )}
+      
       <ExportCard 
         title="PDF"
         description="Formato compatible con impresión"
@@ -71,7 +87,7 @@ interface ExportCardProps {
   buttonText: string;
   buttonAction: () => void;
   disabled: boolean;
-  colorScheme: "primary" | "green" | "amber";
+  colorScheme: "primary" | "green" | "amber" | "blue";
   isMobile: boolean;
 }
 
@@ -103,6 +119,12 @@ const ExportCard: React.FC<ExportCardProps> = ({
       border: "border-amber-200 dark:border-amber-800/60",
       button: "bg-amber-600 hover:bg-amber-700 text-white",
       icon: "text-amber-600"
+    },
+    blue: {
+      gradient: "bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20",
+      border: "border-blue-200 dark:border-blue-800/60",
+      button: "bg-blue-600 hover:bg-blue-700 text-white",
+      icon: "text-blue-600"
     }
   };
 

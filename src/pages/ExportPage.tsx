@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useDocuments } from "@/context/document/document-context";
+import { useDocuments } from "@/hooks/use-documents-context";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
@@ -205,7 +205,7 @@ const ExportFilters = ({
               <SelectValue placeholder="Todos los clientes" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los clientes</SelectItem>
+              <SelectItem value="all">Todos los clientes</SelectItem>
               {customers.map((customer) => (
                 <SelectItem key={customer.id} value={customer.id}>
                   {customer.name}
@@ -502,7 +502,7 @@ const ExportPage = () => {
                   <ul className="space-y-2">
                     {filteredDocuments.slice(0, 5).map(doc => (
                       <li key={doc.id} className="text-sm flex justify-between border-b pb-2">
-                        <span className="font-medium">{doc.number}</span>
+                        <span className="font-medium">{doc.documentNumber}</span>
                         <span className="text-muted-foreground">{format(new Date(doc.date), "P", { locale: es })}</span>
                       </li>
                     ))}
@@ -813,7 +813,7 @@ const ExportPage = () => {
                                     onClick={(e) => e.stopPropagation()}
                                   />
                                 </td>
-                                <td className="p-3 text-sm">{doc.number}</td>
+                                <td className="p-3 text-sm">{doc.documentNumber}</td>
                                 <td className="p-3 text-sm">
                                   {doc.type === 'quote' ? 'Cotización' : 'Factura'}
                                 </td>
@@ -983,16 +983,18 @@ const ExportPage = () => {
                     </div>
                   </CardContent>
                   <CardFooter className="flex flex-col sm:flex-row gap-3">
-                    <Select defaultValue="pdf" className="w-full sm:w-[150px]">
-                      <SelectTrigger>
-                        <SelectValue placeholder="Formato" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="pdf">PDF</SelectItem>
-                        <SelectItem value="excel">Excel</SelectItem>
-                        <SelectItem value="csv">CSV</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="w-full sm:w-[150px]">
+                      <Select defaultValue="pdf">
+                        <SelectTrigger>
+                          <SelectValue placeholder="Formato" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="pdf">PDF</SelectItem>
+                          <SelectItem value="excel">Excel</SelectItem>
+                          <SelectItem value="csv">CSV</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     
                     <Button 
                       onClick={handleExport} 

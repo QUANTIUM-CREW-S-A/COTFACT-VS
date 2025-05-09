@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, Bell, Cloud, CloudOff, Loader, ChevronDown, User, Settings, Database, Server, RefreshCw, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
+import BlockerDetectedAlert from './BlockerDetectedAlert';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -265,6 +266,13 @@ const TopNavbar: React.FC<TopNavbarProps> = ({
 
   return (
     <div className="border-b border-border bg-background shadow-sm">
+      {/* Mostrar alerta cuando se detecte un bloqueador */}
+      {connectionStatus.blockerDetected && (
+        <div className="px-4 pt-4">
+          <BlockerDetectedAlert onRetryConnection={checkConnections} />
+        </div>
+      )}
+      
       <div className="flex h-16 items-center justify-between px-4">
         {/* Mobile menu button (visible solo en móvil) */}
         <button

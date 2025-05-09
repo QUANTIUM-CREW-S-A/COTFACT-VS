@@ -1,6 +1,16 @@
 import { supabase } from '@/lib/supabase';
 import { testSupabaseConnection, testServerConnection, testBackendFeatures } from './realtime';
 
+// Estado global para la detección de bloqueadores
+const blockerDetectionState = {
+  detected: false,
+  detectionTimestamp: 0,
+  attemptCount: 0,
+  cooldownPeriodMs: 60000, // 1 minuto de cooldown entre intentos de detección
+  maxAttempts: 3, // Máximo número de intentos antes de asumir bloqueo permanente
+  blockedUrls: new Set<string>()
+};
+
 // Tipos para el estado de conexión
 export interface ConnectionStatus {
   database: {
@@ -18,6 +28,7 @@ export interface ConnectionStatus {
   };
   mode: 'online' | 'offline' | 'mixed';
   status: 'connected' | 'disconnected' | 'checking' | 'partial';
+  blockerDetected?: boolean; // Nueva propiedad para indicar si hay bloqueadores detectados
 }
 
 /**
@@ -41,16 +52,71 @@ export const checkDatabaseConnection = async (): Promise<{ connected: boolean; m
 };
 
 /**
+ * Verifica si debemos proceder con la detección del servidor basado en
+ * intentos previos y tiempo de enfriamiento para evitar mensajes repetitivos
+ */
+function shouldAttemptServerDetection(): boolean {
+  const now = Date.now();
+  
+  // Si ya detectamos bloqueo permanente (después de maxAttempts)
+  if (blockerDetectionState.attemptCount >= blockerDetectionState.maxAttempts) {
+    // Solo intentar ocasionalmente (cada 5 minutos) después de confirmar bloqueo
+    return (now - blockerDetectionState.detectionTimestamp) > 5 * 60 * 1000;
+  }
+  
+  // Si estamos en periodo de cooldown después de una detección reciente
+  if (blockerDetectionState.detected && 
+      (now - blockerDetectionState.detectionTimestamp) < blockerDetectionState.cooldownPeriodMs) {
+    return false;
+  }
+  
+  return true;
+}
+
+/**
+ * Registra un error de bloqueo detectado
+ */
+export function registerBlockedRequest(url: string): void {
+  blockerDetectionState.detected = true;
+  blockerDetectionState.detectionTimestamp = Date.now();
+  blockerDetectionState.attemptCount++;
+  blockerDetectionState.blockedUrls.add(url);
+  
+  console.warn(`Bloqueador detectado para ${url}. Intento ${blockerDetectionState.attemptCount} de ${blockerDetectionState.maxAttempts}`);
+}
+
+/**
  * Verifica el estado de la conexión con el servidor de API
  */
 export const checkServerConnection = async (
   serverUrls = ['http://localhost:3001', 'http://127.0.0.1:3001', 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3002']
 ): Promise<{ connected: boolean; url: string; mode: 'online' | 'offline'; status?: 'full' | 'partial' | 'minimal' | 'down'; features?: Record<string, boolean>; error?: any }> => {
+  // Si hemos detectado un bloqueador y estamos en cooldown, saltamos la detección completa
+  if (!shouldAttemptServerDetection()) {
+    return {
+      connected: true, // Asumimos conectado para no mostrar errores repetitivos
+      url: 'http://localhost:3001', // URL por defecto
+      mode: 'online',
+      status: 'partial',
+      features: {},
+      error: {
+        type: 'BLOCKER_DETECTED',
+        message: 'Detección de servidor omitida debido a bloqueador detectado previamente'
+      }
+    };
+  }
+  
   try {
     // Probar cada URL hasta encontrar una que funcione
     const serverResult = await testServerConnection(serverUrls);
     
     if (serverResult.connected) {
+      // Resetear el contador de intentos si la conexión es exitosa
+      if (serverResult.status !== 'detected') {
+        blockerDetectionState.attemptCount = 0;
+        blockerDetectionState.detected = false;
+      }
+      
       // Si tenemos una conexión, verificar las características disponibles
       const featuresResult = await testBackendFeatures(serverResult.url);
       
@@ -62,6 +128,11 @@ export const checkServerConnection = async (
         features: featuresResult.features
       };
     } else {
+      if (serverResult.error?.type === 'BLOCKER_DETECTED') {
+        // Si se detectó un bloqueador, registramos el evento
+        registerBlockedRequest(serverResult.url || 'unknown-url');
+      }
+      
       return {
         connected: false,
         url: '',
@@ -72,6 +143,12 @@ export const checkServerConnection = async (
     }
   } catch (error) {
     console.error('Error verificando conexión con el servidor API:', error);
+    
+    // Verificar si el error es por un bloqueador
+    if (error?.message?.includes('ERR_BLOCKED_BY_CLIENT')) {
+      registerBlockedRequest('request-error');
+    }
+    
     return {
       connected: false,
       url: '',
@@ -111,7 +188,8 @@ export const checkConnectionStatus = async (): Promise<ConnectionStatus> => {
     database: dbStatus,
     server: serverStatus,
     mode,
-    status
+    status,
+    blockerDetected: blockerDetectionState.detected
   };
 };
 
@@ -126,13 +204,17 @@ export const setupConnectionMonitoring = (
   let lastStatus: string = '';
   
   const checkAndNotify = async () => {
-    const status = await checkConnectionStatus();
-    const statusSignature = `${status.database.connected}-${status.server.connected}-${status.mode}`;
-    
-    // Sólo notificar si hay un cambio en el estado
-    if (statusSignature !== lastStatus) {
-      onStatusChange(status);
-      lastStatus = statusSignature;
+    try {
+      const status = await checkConnectionStatus();
+      const statusSignature = `${status.database.connected}-${status.server.connected}-${status.mode}-${status.blockerDetected}`;
+      
+      // Sólo notificar si hay un cambio en el estado
+      if (statusSignature !== lastStatus) {
+        onStatusChange(status);
+        lastStatus = statusSignature;
+      }
+    } catch (err) {
+      console.error('Error en checkAndNotify:', err);
     }
   };
   
@@ -144,4 +226,24 @@ export const setupConnectionMonitoring = (
   
   // Devolver una función para detener el monitoreo
   return () => clearInterval(intervalId);
+};
+
+/**
+ * Devuelve el estado actual de detección de bloqueadores
+ */
+export const getBlockerDetectionState = () => {
+  return {
+    ...blockerDetectionState,
+    blockedUrls: [...blockerDetectionState.blockedUrls]
+  };
+};
+
+/**
+ * Resetea el estado de detección de bloqueadores
+ */
+export const resetBlockerDetection = () => {
+  blockerDetectionState.detected = false;
+  blockerDetectionState.attemptCount = 0;
+  blockerDetectionState.blockedUrls.clear();
+  return true;
 };

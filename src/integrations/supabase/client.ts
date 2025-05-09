@@ -1,6 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+// filepath: /home/dark/Documentos/QUANTIUM CREW S.A/Repositorios/COTFACT-VS/src/integrations/supabase/client.ts
+// Import and re-export the singleton Supabase client instance
+// instead of creating a new one which causes the "Multiple GoTrueClient instances" warning
+import { supabase as supabaseInstance } from '@/lib/supabase';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Re-export the singleton instance
+export const supabase = supabaseInstance;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Add a warning to prevent direct imports from @supabase/supabase-js
+// This helps developers to use our singleton instead
+if (process.env.NODE_ENV === 'development') {
+  console.warn(
+    'IMPORTANTE: Siempre importa el cliente Supabase desde @/integrations/supabase/client o @/lib/supabase para evitar múltiples instancias'
+  );
+}

@@ -17,20 +17,56 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Configuración para dividir el código en chunks más pequeños
-        manualChunks: {
-          // Separar las dependencias de React
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // Separar librerías UI
-          'ui-vendor': ['@radix-ui/react-icons', '@radix-ui/react-accordion', '@radix-ui/react-dialog', '@radix-ui/react-tabs'],
-          // Separar utilidades comunes
-          'utils-vendor': ['uuid', 'date-fns', 'lodash', 'clsx', 'tailwind-merge'],
+        // Configuration for code splitting into smaller chunks
+        manualChunks: (id) => {
+          // Vendor chunks for major libraries
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('scheduler') || id.includes('prop-types')) {
+              return 'react-vendor';
+            }
+            
+            if (id.includes('@radix-ui')) {
+              return 'ui-vendor';
+            }
+            
+            if (id.includes('uuid') || id.includes('date-fns') || 
+                id.includes('lodash') || id.includes('clsx') || 
+                id.includes('tailwind-merge')) {
+              return 'utils-vendor';
+            }
+            
+            // Split other major dependencies
+            if (id.includes('pdf') || id.includes('jspdf') || id.includes('html2canvas')) {
+              return 'pdf-vendor';
+            }
+            
+            // Add more common libraries if needed
+            if (id.includes('axios') || id.includes('query') || id.includes('swr')) {
+              return 'data-vendor';
+            }
+            
+            // Group remaining node_modules
+            return 'vendor';
+          }
+          
+          // Split application code by main directories
+          if (id.includes('/src/components/')) {
+            return 'components';
+          }
+          
+          if (id.includes('/src/context/')) {
+            return 'context';
+          }
+          
+          if (id.includes('/src/services/')) {
+            return 'services';
+          }
         }
       }
     },
-    // Aumentar el límite de advertencia para chunks grandes
-    chunkSizeWarningLimit: 600,
-    // Optimizaciones para reducir el tamaño
+    // Increase warning limit for large chunks
+    chunkSizeWarningLimit: 800,
+    // Build optimizations
     minify: 'terser',
     terserOptions: {
       compress: {
@@ -38,5 +74,13 @@ export default defineConfig({
         drop_debugger: true,
       },
     },
+    // Enable source map for production (optional, remove if not needed)
+    sourcemap: false,
+    // Improve CSS handling
+    cssCodeSplit: true,
+    // Optimize dependencies
+    optimizeDeps: {
+      include: ['react', 'react-dom'],
+    }
   }
 });

@@ -1,7 +1,6 @@
-
 import { PaymentMethod } from '@/types';
 import { supabase } from '@/lib/supabase';
-import { isValidUUID } from './utils';
+import { isValidUUID, handleSupabaseError } from './utils';
 
 export const getPaymentMethods = async () => {
   try {
@@ -28,8 +27,7 @@ export const getPaymentMethods = async () => {
     
     return formattedMethods;
   } catch (error) {
-    console.error(`Error en getPaymentMethods:`, error);
-    throw error;
+    return handleSupabaseError('getPaymentMethods', error, 'método de pago');
   }
 };
 
@@ -66,8 +64,7 @@ export const createPaymentMethod = async (method: Omit<PaymentMethod, 'id'> & { 
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(`Error en createPaymentMethod:`, error);
-    throw error;
+    return handleSupabaseError('createPaymentMethod', error, 'método de pago');
   }
 };
 
@@ -81,11 +78,13 @@ export const updatePaymentMethod = async (id: string, method: Partial<PaymentMet
         method.accountType || method.isYappy !== undefined || 
         method.yappyLogo || method.yappyPhone) {
       
-      const { data: currentMethod } = await supabase
+      const { data: currentMethod, error: fetchError } = await supabase
         .from('payment_methods')
         .select('details')
         .eq('id', id)
         .single();
+      
+      if (fetchError) throw fetchError;
       
       updates.details = {
         ...(currentMethod?.details as any || {}),
@@ -116,8 +115,7 @@ export const updatePaymentMethod = async (id: string, method: Partial<PaymentMet
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(`Error en updatePaymentMethod:`, error);
-    throw error;
+    return handleSupabaseError('updatePaymentMethod', error, 'método de pago');
   }
 };
 
@@ -131,7 +129,6 @@ export const deletePaymentMethod = async (id: string) => {
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error(`Error en deletePaymentMethod:`, error);
-    throw error;
+    return handleSupabaseError('deletePaymentMethod', error, 'método de pago');
   }
 };

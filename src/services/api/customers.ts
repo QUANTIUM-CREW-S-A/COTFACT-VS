@@ -1,7 +1,6 @@
-
 import { Customer } from '@/types';
 import { supabase } from '@/lib/supabase';
-import { isValidUUID } from './utils';
+import { isValidUUID, handleSupabaseError } from './utils';
 
 export const getCustomers = async () => {
   try {
@@ -13,8 +12,7 @@ export const getCustomers = async () => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(`Error en getCustomers:`, error);
-    throw error;
+    return handleSupabaseError('getCustomers', error, 'cliente');
   }
 };
 
@@ -24,22 +22,30 @@ export const createCustomer = async (customer: {
   address: { company: string; location: string };
   phone: string;
   email: string;
+  type?: string;
 }) => {
   try {
     console.log("Creating customer with data:", customer);
     
-    if (!customer.user_id || customer.user_id === 'anonymous' || !isValidUUID(customer.user_id)) {
-      console.error("Invalid user_id for customer creation:", customer.user_id);
-      throw new Error("Se requiere un ID de usuario válido");
+    // Validamos datos mínimos requeridos
+    if (!customer.name) {
+      throw new Error("El nombre del cliente es obligatorio");
     }
     
+    // Adaptar al formato de la tabla real en la base de datos
+    // IMPORTANTE: Eliminamos user_id porque no existe en la tabla customers
     const customerForDB = {
-      user_id: customer.user_id,
       name: customer.name,
-      address: customer.address,
-      phone: customer.phone,
-      email: customer.email,
+      company: customer.address?.company || 'N/A',
+      location: customer.address?.location || 'N/A',
+      phone: customer.phone || 'N/A',
+      email: customer.email || null,
+      type: customer.type || 'business',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
+    
+    console.log("Formatted customer for DB:", customerForDB);
     
     const { data, error } = await supabase
       .from('customers')
@@ -54,8 +60,7 @@ export const createCustomer = async (customer: {
     
     return data;
   } catch (error) {
-    console.error(`Error en createCustomer:`, error);
-    throw error;
+    return handleSupabaseError('createCustomer', error, 'cliente');
   }
 };
 
@@ -65,11 +70,27 @@ export const updateCustomer = async (id: string, customer: {
   address: { company: string; location: string };
   phone: string;
   email: string;
+  type?: string;
 }) => {
   try {
+    console.log("Updating customer in api/customers.ts with data:", customer);
+    
+    // Adaptar al formato de la tabla real en la base de datos
+    const customerForDB = {
+      name: customer.name,
+      company: customer.address?.company || 'N/A',
+      location: customer.address?.location || 'N/A',
+      phone: customer.phone,
+      email: customer.email || null,
+      type: customer.type || 'business',
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log("Formatted customer for DB update:", customerForDB);
+    
     const { data, error } = await supabase
       .from('customers')
-      .update(customer)
+      .update(customerForDB)
       .eq('id', id)
       .select()
       .single();
@@ -77,8 +98,7 @@ export const updateCustomer = async (id: string, customer: {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(`Error en updateCustomer:`, error);
-    throw error;
+    return handleSupabaseError('updateCustomer', error, 'cliente');
   }
 };
 
@@ -92,7 +112,6 @@ export const deleteCustomer = async (id: string) => {
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error(`Error en deleteCustomer:`, error);
-    throw error;
+    return handleSupabaseError('deleteCustomer', error, 'cliente');
   }
 };

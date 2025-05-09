@@ -1,22 +1,97 @@
 import { supabase } from '@/lib/supabase';
+import { handleSupabaseError } from './utils';
+import { API_URLS, API_ENDPOINTS, updateBackendIp } from './config';
 
-export const enableRealtimeForTable = async (tableName: string) => {
+// Store active channel subscriptions for cleanup
+const activeChannels: Record<string, any> = {};
+
+/**
+ * Enable realtime subscriptions for a specific table
+ * @param tableName The database table to subscribe to
+ * @param eventCallback Callback function for handling change events
+ * @returns {boolean} Success status
+ */
+export const enableRealtimeForTable = async (
+  tableName: string, 
+  eventCallback?: (payload: any) => void
+) => {
   try {
-    // Enable realtime for the table using Supabase's channel system
-    const channel = supabase.channel(`${tableName}-changes`)
+    // Cleanup any existing subscription for this table
+    if (activeChannels[tableName]) {
+      try {
+        await activeChannels[tableName].unsubscribe();
+        console.log(`Unsubscribed from previous ${tableName} channel`);
+      } catch (err) {
+        console.warn(`Error unsubscribing from ${tableName} channel:`, err);
+      }
+    }
+
+    // Create a new channel with a unique name to avoid conflicts
+    const channelId = `${tableName}-changes-${Date.now()}`;
+    const channel = supabase.channel(channelId)
       .on('postgres_changes',
         { event: '*', schema: 'public', table: tableName },
         payload => {
           console.log(`Change in ${tableName}:`, payload);
+          // Execute callback if provided
+          if (eventCallback && typeof eventCallback === 'function') {
+            eventCallback(payload);
+          }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log(`Successfully subscribed to ${tableName} changes`);
+        } else if (status === 'CLOSED') {
+          console.log(`Channel for ${tableName} was closed`);
+          delete activeChannels[tableName];
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error(`Error in channel for ${tableName}`);
+        }
+      });
 
+    activeChannels[tableName] = channel;
     console.log(`Realtime enabled for table: ${tableName}`);
     return true;
   } catch (error) {
     console.error(`Error enabling realtime for table ${tableName}:`, error);
     return false;
+  }
+};
+
+/**
+ * Disable realtime subscriptions for a specific table
+ * @param tableName The database table to unsubscribe from
+ * @returns {boolean} Success status
+ */
+export const disableRealtimeForTable = async (tableName: string) => {
+  try {
+    if (activeChannels[tableName]) {
+      await activeChannels[tableName].unsubscribe();
+      delete activeChannels[tableName];
+      console.log(`Realtime disabled for table: ${tableName}`);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(`Error disabling realtime for table ${tableName}:`, error);
+    return false;
+  }
+};
+
+/**
+ * Cleanup all active realtime subscriptions
+ * @returns {Promise<void>}
+ */
+export const cleanupAllRealtimeSubscriptions = async () => {
+  try {
+    const tables = Object.keys(activeChannels);
+    for (const table of tables) {
+      await disableRealtimeForTable(table);
+    }
+    console.log('All realtime subscriptions cleaned up');
+  } catch (error) {
+    console.error('Error cleaning up realtime subscriptions:', error);
   }
 };
 
@@ -29,11 +104,7 @@ export const testSupabaseConnection = async () => {
     // Primero intentamos un método más simple: verificar la sesión
     const { data: sessionData } = await supabase.auth.getSession();
     
-    // Si hay un error de conexión, supabase lo arrojará como una excepción
-    
     // Como respaldo, intentamos una consulta simple a cualquier tabla
-    // Para evitar problemas con permisos, utilizamos una función RPC
-    // que debería estar disponible para cualquier usuario autenticado
     const { data, error } = await supabase
       .from('profiles')
       .select('count')
@@ -47,14 +118,13 @@ export const testSupabaseConnection = async () => {
         return true;
       }
       
-      console.error("Error testing Supabase connection:", error);
-      return false;
+      throw error;
     }
     
     console.log("Supabase connection successful");
     return true;
   } catch (error) {
-    console.error("Exception testing Supabase connection:", error);
+    console.error("Error testing Supabase connection:", error);
     return false;
   }
 };
@@ -103,16 +173,16 @@ const pingServer = async (url: string): Promise<boolean> => {
  * @returns Un objeto con la información de la conexión.
  */
 export const testServerConnection = async (
-  urls: string[] = [
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3002'
-  ]
+  urls: string[] = API_URLS
 ): Promise<{ connected: boolean; url: string; status?: string; error?: any }> => {
   // Intentar con múltiples endpoints para aumentar posibilidades de éxito
-  const endpoints = ['/health', '/', '/api/health', '/api/status', '/status'];
+  const endpoints = [
+    API_ENDPOINTS.HEALTH, 
+    API_ENDPOINTS.ROOT, 
+    API_ENDPOINTS.API_HEALTH, 
+    API_ENDPOINTS.API_STATUS, 
+    API_ENDPOINTS.STATUS
+  ];
   
   console.log('Iniciando pruebas de conexión con el servidor backend...');
 
@@ -120,28 +190,91 @@ export const testServerConnection = async (
    * Detecta si una extensión o política de navegador está bloqueando solicitudes (ERR_BLOCKED_BY_CLIENT)
    * Llama a onBlocked si se detecta el bloqueo.
    */
-  async function checkForBlockers(url: string, onBlocked: () => void) {
+  async function checkForBlockers(url: string, onBlocked: (url: string) => void) {
     try {
-      await fetch(url, { method: 'HEAD', mode: 'no-cors' });
-    } catch (err: any) {
-      if (err?.message?.includes('BLOCKED_BY_CLIENT')) {
-        onBlocked();
+      // Crear un iframe oculto para detectar si el navegador bloquea el contenido
+      const testFrame = document.createElement('iframe');
+      testFrame.style.display = 'none';
+      testFrame.src = 'about:blank';
+      document.body.appendChild(testFrame);
+      
+      // Intentar cargar un recurso desde la URL para ver si está bloqueado
+      const testImg = document.createElement('img');
+      testImg.src = `${url}/favicon.ico?nocache=${Date.now()}`;
+      testImg.style.display = 'none';
+      
+      // Si la imagen se carga, significa que no hay bloqueo
+      testImg.onload = () => {
+        if (document.body.contains(testFrame)) {
+          document.body.removeChild(testFrame);
+        }
+      };
+      
+      // Si ocurre un error, podría ser un bloqueo por una extensión
+      testImg.onerror = (e: any) => {
+        const errorMessage = e?.message || '';
+        const blockedErrorPatterns = [
+          'BLOCKED_BY_CLIENT',
+          'ERR_BLOCKED_BY_CLIENT',
+          'net::ERR_BLOCKED_BY_CLIENT',
+          'AbortError',
+          'NetworkError'
+        ];
+        
+        if (blockedErrorPatterns.some(pattern => errorMessage.includes(pattern))) {
+          console.warn(`Bloqueador detectado para ${url}. Algunas funciones pueden no trabajar correctamente.`);
+          onBlocked(url);
+        }
+        
+        if (document.body.contains(testFrame)) {
+          document.body.removeChild(testFrame);
+        }
+      };
+      
+      // Añadir la imagen al iframe para el test
+      if (testFrame.contentDocument?.body) {
+        testFrame.contentDocument.body.appendChild(testImg);
       }
+      
+      // Timeout para limpiar si no hay respuesta
+      setTimeout(() => {
+        if (document.body.contains(testFrame)) {
+          document.body.removeChild(testFrame);
+        }
+      }, 3000);
+    } catch (err) {
+      // Si hay un error aquí, probablemente las políticas de seguridad son muy estrictas
+      console.log('Error al verificar bloqueadores:', err);
     }
   }
 
   /**
    * Realiza una petición con reintentos inteligentes y backoff exponencial.
    */
-  async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, delay = 1000): Promise<Response> {
+  async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 2, delay = 500): Promise<Response> {
+    // Importar la función registerBlockedRequest desde el módulo connectivity
+    const { registerBlockedRequest } = await import('./connectivity');
+    
     let lastError;
     for (let i = 0; i < retries; i++) {
       try {
-        return await fetch(url, options);
-      } catch (err) {
+        const response = await fetch(url, options);
+        return response;
+      } catch (err: any) {
         lastError = err;
-        if (err?.message?.includes('BLOCKED_BY_CLIENT')) throw err;
-        await new Promise(res => setTimeout(res, delay * Math.pow(2, i)));
+        
+        // Detectar errores de bloqueo por extensiones del navegador
+        if (err?.message?.includes('ERR_BLOCKED_BY_CLIENT') || 
+            err?.message?.includes('BLOCKED_BY_CLIENT') ||
+            err?.message?.includes('NetworkError')) {
+          // Registrar el bloqueo para reducir comprobaciones futuras
+          registerBlockedRequest(url);
+          console.warn(`Petición bloqueada detectada en ${url}. Esto puede deberse a extensiones como AdBlock.`);
+          throw new Error(`BLOCKER_DETECTED: La petición a ${url} fue bloqueada por el navegador o una extensión`);
+        }
+        
+        // Solo hacer reintento si no es un error de bloqueo
+        await new Promise(res => setTimeout(res, delay * Math.pow(1.5, i)));
       }
     }
     throw lastError;
@@ -224,6 +357,12 @@ export const testServerConnection = async (
         
         if (result.connected) {
           console.log(`Enhanced fetch successful for ${url}${endpoint}:`, result.data);
+          
+          // Extraer y guardar la IP del host si está disponible en la respuesta
+          if (result.data?.host) {
+            updateBackendIp(result.data.host);
+          }
+          
           return {
             connected: true,
             url,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useDocuments } from "@/context/document/document-context";
+import { useDocuments } from "@/hooks/use-documents-context";
 import { Customer } from "@/types";
 import { toast } from "sonner";
 

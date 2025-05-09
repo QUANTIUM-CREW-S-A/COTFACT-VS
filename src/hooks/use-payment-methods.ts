@@ -4,23 +4,8 @@ import { PaymentMethod } from "@/types";
 import { toast } from "sonner";
 import * as api from "@/services/api";
 import { useAuth } from "@/context/auth";
-import { supabase } from "@/integrations/supabase/client";
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-
-// Definir tipos para los eventos de Supabase
-interface PaymentMethodRecord {
-  id: string;
-  details: {
-    bank: string;
-    accountHolder: string;
-    accountNumber: string;
-    accountType: string;
-    isYappy: boolean;
-    yappyLogo: string;
-    yappyPhone: string;
-  };
-  [key: string]: unknown; // Para otros campos que puedan existir
-}
+import { enableRealtimeForTable, disableRealtimeForTable } from "@/services/api/realtime";
+import { ApiError, ErrorType } from "@/services/api/utils";
 
 export function usePaymentMethods() {
   const { documents, setDocuments } = useDocuments();
@@ -42,6 +27,21 @@ export function usePaymentMethods() {
     
     setDocuments(updatedDocuments);
   }, [documents, setDocuments]);
+
+  // Helper para formatear métodos de pago desde la respuesta de Supabase
+  const formatPaymentMethodFromDB = useCallback((data: any): PaymentMethod => {
+    const details = data.details || {};
+    return {
+      id: data.id,
+      bank: details.bank || '',
+      accountHolder: details.accountHolder || '',
+      accountNumber: details.accountNumber || '',
+      accountType: details.accountType || '',
+      isYappy: details.isYappy || false,
+      yappyLogo: details.yappyLogo || '',
+      yappyPhone: details.yappyPhone || ''
+    };
+  }, []);
   
   // Cargar métodos de pago desde Supabase (con control para evitar cargas innecesarias)
   const loadPaymentMethods = useCallback(async (forceReload = false) => {
@@ -63,7 +63,22 @@ export function usePaymentMethods() {
       hasLoadedData.current = true;
     } catch (error) {
       console.error("Error al cargar métodos de pago:", error);
-      toast.error("Error al cargar métodos de pago");
+      
+      // Usar nuestro sistema de manejo de errores mejorado
+      if (error instanceof ApiError) {
+        switch(error.type) {
+          case ErrorType.NETWORK:
+            toast.error("Error de conexión al cargar métodos de pago");
+            break;
+          case ErrorType.PERMISSION:
+            toast.error("No tienes permisos para acceder a los métodos de pago");
+            break;
+          default:
+            toast.error("Error al cargar métodos de pago");
+        }
+      } else {
+        toast.error("Error al cargar métodos de pago");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,79 +97,70 @@ export function usePaymentMethods() {
     }, 300);
   }, [loadPaymentMethods]);
   
-  // Actualizar método de pago desde evento de tiempo real
-  const handleRealtimeUpdate = useCallback((payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
-    console.log("Payment method change detected:", payload);
-    
-    // En lugar de recargar todos los datos, actualizar solo lo que cambió
-    const { eventType } = payload;
-    
-    if (eventType === 'INSERT') {
-      // Convertir formato de supabase al formato de la aplicación
-      // Cast type to access the 'new' property that exists in INSERT events
-      const newRecord = (payload as any).new as PaymentMethodRecord; 
-      const details = newRecord.details;
-      
-      if (!details) {
-        console.error("Error: Datos de método de pago incompletos");
-        return;
-      }
-      
-      const formattedMethod: PaymentMethod = {
-        id: newRecord.id,
-        bank: details?.bank || '',
-        accountHolder: details?.accountHolder || '',
-        accountNumber: details?.accountNumber || '',
-        accountType: details?.accountType || '',
-        isYappy: details?.isYappy || false,
-        yappyLogo: details?.yappyLogo || '',
-        yappyPhone: details?.yappyPhone || ''
-      };
-      
-      setPaymentMethods(prev => {
-        const newMethods = [...prev, formattedMethod];
-        updatePaymentMethodsInDocuments(newMethods);
-        return newMethods;
-      });
-    } 
-    else if (eventType === 'DELETE') {
-      // Cast type to access the 'old' property that exists in DELETE events
-      const oldRecord = (payload as any).old as PaymentMethodRecord;
-      const deletedId = oldRecord.id;
-      
-      setPaymentMethods(prev => {
-        const newMethods = prev.filter(method => method.id !== deletedId);
-        updatePaymentMethodsInDocuments(newMethods);
-        return newMethods;
-      });
-    }
-    else if (eventType === 'UPDATE') {
-      // Usar versión con debounce para evitar múltiples recargas
-      debouncedReload();
-    }
-  }, [debouncedReload, updatePaymentMethodsInDocuments]);
-  
-  // Set up real-time subscription for payment methods
+  // Set up real-time subscription for payment methods using our improved realtime utility
   useEffect(() => {
     if (!authState.isAuthenticated || !authState.currentUser?.id) return;
     
     console.log("Setting up real-time subscription for payment methods");
     
-    const paymentMethodsChannel = supabase
-      .channel('payment-methods-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'payment_methods',
-        filter: `user_id=eq.${authState.currentUser.id}`
-      }, handleRealtimeUpdate)
-      .subscribe();
+    // Usar nuestro helper mejorado para suscripciones realtime
+    const enableSubscription = async () => {
+      await enableRealtimeForTable('payment_methods', (payload) => {
+        console.log("Payment method change detected:", payload);
+        
+        // Procesar el cambio en base al tipo de evento
+        const { eventType, new: newRecord, old: oldRecord } = payload;
+        
+        if (eventType === 'INSERT') {
+          // Si es un método creado por este mismo usuario, actualizar la lista
+          if (newRecord && newRecord.user_id === authState.currentUser?.id) {
+            setPaymentMethods(prev => {
+              // Verificar que no exista ya (para evitar duplicados)
+              const exists = prev.some(method => method.id === newRecord.id);
+              if (!exists) {
+                const formattedMethod = formatPaymentMethodFromDB(newRecord);
+                const newMethods = [...prev, formattedMethod];
+                updatePaymentMethodsInDocuments(newMethods);
+                return newMethods;
+              }
+              return prev;
+            });
+          }
+        } 
+        else if (eventType === 'UPDATE') {
+          // Actualizar el método existente
+          if (newRecord && oldRecord && newRecord.user_id === authState.currentUser?.id) {
+            setPaymentMethods(prev => {
+              const updatedMethods = prev.map(method => 
+                method.id === oldRecord.id 
+                  ? formatPaymentMethodFromDB(newRecord) 
+                  : method
+              );
+              updatePaymentMethodsInDocuments(updatedMethods);
+              return updatedMethods;
+            });
+          }
+        }
+        else if (eventType === 'DELETE') {
+          // Eliminar el método de la lista
+          if (oldRecord) {
+            setPaymentMethods(prev => {
+              const filteredMethods = prev.filter(method => method.id !== oldRecord.id);
+              updatePaymentMethodsInDocuments(filteredMethods);
+              return filteredMethods;
+            });
+          }
+        }
+      });
+    };
+    
+    enableSubscription();
     
     return () => {
       console.log("Cleaning up payment methods subscription");
-      supabase.removeChannel(paymentMethodsChannel);
+      disableRealtimeForTable('payment_methods');
     };
-  }, [authState.isAuthenticated, authState.currentUser?.id, handleRealtimeUpdate]);
+  }, [authState.isAuthenticated, authState.currentUser?.id, formatPaymentMethodFromDB, updatePaymentMethodsInDocuments]);
 
   // Load payment methods on init - just once when authenticated
   useEffect(() => {
@@ -167,7 +173,7 @@ export function usePaymentMethods() {
     }
   }, [authState.isAuthenticated, documents, loadPaymentMethods]);
   
-  // Handlers sin cambios
+  // Handlers mejorados con manejo de errores
   const handleAddMethod = async (newMethodData: Omit<PaymentMethod, "id">) => {
     try {
       // Ensure we have a user_id for the payment method
@@ -194,7 +200,7 @@ export function usePaymentMethods() {
           user_id: userId
         });
         
-        method = savedMethod;
+        method = formatPaymentMethodFromDB(savedMethod);
       } else {
         // Modo local si no está autenticado
         method = {
@@ -210,7 +216,28 @@ export function usePaymentMethods() {
       toast.success("Método de pago agregado y aplicado a todos los documentos");
     } catch (error) {
       console.error("Error al agregar método de pago:", error);
-      toast.error("Error al agregar método de pago");
+      
+      // Usar nuestro sistema de manejo de errores mejorado
+      if (error instanceof ApiError) {
+        switch(error.type) {
+          case ErrorType.NETWORK:
+            toast.error("Error de conexión al crear método de pago");
+            break;
+          case ErrorType.PERMISSION:
+            toast.error("No tienes permisos para crear métodos de pago");
+            break;
+          case ErrorType.DUPLICATE:
+            toast.error("Ya existe un método de pago con esta información");
+            break;
+          case ErrorType.VALIDATION:
+            toast.error("Datos inválidos: " + error.message);
+            break;
+          default:
+            toast.error("Error al crear método de pago: " + error.message);
+        }
+      } else {
+        toast.error("Error al agregar método de pago");
+      }
     }
   };
   
@@ -267,7 +294,22 @@ export function usePaymentMethods() {
       toast.success("Método de pago Yappy agregado y aplicado a todos los documentos");
     } catch (error) {
       console.error("Error con método Yappy:", error);
-      toast.error("Error al configurar método Yappy");
+      
+      // Usar nuestro sistema de manejo de errores mejorado
+      if (error instanceof ApiError) {
+        switch(error.type) {
+          case ErrorType.NETWORK:
+            toast.error("Error de conexión al configurar Yappy");
+            break;
+          case ErrorType.PERMISSION:
+            toast.error("No tienes permisos para configurar Yappy");
+            break;
+          default:
+            toast.error("Error al configurar Yappy: " + error.message);
+        }
+      } else {
+        toast.error("Error al configurar método Yappy");
+      }
     }
   };
   
@@ -285,7 +327,25 @@ export function usePaymentMethods() {
       toast.success("Método de pago eliminado de todos los documentos");
     } catch (error) {
       console.error("Error al eliminar método de pago:", error);
-      toast.error("Error al eliminar método de pago");
+      
+      // Usar nuestro sistema de manejo de errores mejorado
+      if (error instanceof ApiError) {
+        switch(error.type) {
+          case ErrorType.NETWORK:
+            toast.error("Error de conexión al eliminar método de pago");
+            break;
+          case ErrorType.NOT_FOUND:
+            toast.error("No se encontró el método de pago");
+            break;
+          case ErrorType.PERMISSION:
+            toast.error("No tienes permisos para eliminar este método de pago");
+            break;
+          default:
+            toast.error("Error al eliminar método de pago: " + error.message);
+        }
+      } else {
+        toast.error("Error al eliminar método de pago");
+      }
     }
   };
   
@@ -297,6 +357,7 @@ export function usePaymentMethods() {
     handleAddYappyMethod,
     handleDeleteMethod,
     isLoading,
-    loadPaymentMethods // Exponemos esta función para permitir cargas manuales cuando sea necesario
+    loadPaymentMethods,
+    formatPaymentMethodFromDB // Exponemos el helper de formateo para uso externo
   };
 }

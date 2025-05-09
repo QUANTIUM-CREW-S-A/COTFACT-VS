@@ -1,6 +1,6 @@
-
-import { Document } from '@/types';
+import { Document } from '@/types'; 
 import { supabase } from '@/lib/supabase';
+import { handleSupabaseError } from './utils';
 
 export const getDocuments = async () => {
   try {
@@ -12,8 +12,7 @@ export const getDocuments = async () => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(`Error en getDocuments:`, error);
-    throw error;
+    return handleSupabaseError('getDocuments', error, 'documento');
   }
 };
 
@@ -28,8 +27,7 @@ export const getDocumentById = async (id: string) => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(`Error en getDocumentById:`, error);
-    throw error;
+    return handleSupabaseError('getDocumentById', error, 'documento');
   }
 };
 
@@ -44,8 +42,7 @@ export const createDocument = async (document: Partial<Document>) => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(`Error en createDocument:`, error);
-    throw error;
+    return handleSupabaseError('createDocument', error, 'documento');
   }
 };
 
@@ -61,8 +58,7 @@ export const updateDocument = async (id: string, document: Partial<Document>) =>
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error(`Error en updateDocument:`, error);
-    throw error;
+    return handleSupabaseError('updateDocument', error, 'documento');
   }
 };
 
@@ -76,7 +72,6 @@ export const deleteDocument = async (id: string) => {
     if (error) throw error;
     return true;
   } catch (error) {
-    console.error(`Error en deleteDocument:`, error);
-    throw error;
+    return handleSupabaseError('deleteDocument', error, 'documento');
   }
 };

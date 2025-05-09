@@ -216,27 +216,47 @@ export const getCustomers = async () => {
   }
 };
 
-export const createCustomer = async (customerData: { name: string; email: string }) => {
+export const createCustomer = async (customer: { 
+  user_id: string;
+  name: string;
+  address: { company: string; location: string };
+  phone: string;
+  email: string;
+  type?: string;
+}) => {
   try {
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      throw new Error('Usuario no autenticado');
+    console.log("Creating customer in api.ts with data:", customer);
+    
+    // Validamos datos mínimos requeridos
+    if (!customer.name) {
+      throw new Error("El nombre del cliente es obligatorio");
     }
-
+    
+    // Adaptar al formato de la tabla real en la base de datos
+    // IMPORTANTE: Eliminamos user_id porque no existe en la tabla customers
+    const customerForDB = {
+      name: customer.name,
+      company: customer.address?.company || 'N/A',
+      location: customer.address?.location || 'N/A',
+      phone: customer.phone || 'N/A',
+      email: customer.email || null,
+      type: customer.type || 'business',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+    
+    console.log("Formatted customer for DB in api.ts:", customerForDB);
+    
     const { data, error } = await supabase
       .from('customers')
-      .insert([
-        {
-          ...customerData,
-          created_by: user.id, // Asegúrate de incluir esta columna
-          created_at: new Date().toISOString(),
-        },
-      ])
+      .insert(customerForDB)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error al crear cliente:", error);
+      throw error;
+    }
 
     return data;
   } catch (error) {
@@ -251,16 +271,19 @@ export const updateCustomer = async (id: string, customer: {
   address: { company: string; location: string };
   phone: string;
   email: string;
+  type?: string;
 }) => {
   try {
     console.log("Updating customer:", id, "with data:", customer);
     
-    // Eliminar propiedades que no están en la tabla
-    const { user_id, ...customerData } = customer;
-    
-    // Preparar cliente para actualizar en Supabase
+    // Adaptar al formato de la tabla real en la base de datos
     const customerForDB = {
-      ...customerData,
+      name: customer.name,
+      company: customer.address?.company || 'N/A',
+      location: customer.address?.location || 'N/A',
+      phone: customer.phone,
+      email: customer.email || null,
+      type: customer.type || 'business',
       updated_at: new Date().toISOString()
     };
     

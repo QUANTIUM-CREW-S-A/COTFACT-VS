@@ -10,10 +10,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Garantizar singleton incluso en hot reload/desarrollo
-const globalForSupabase = typeof window !== 'undefined' ? (window as any) : globalThis;
+const globalForSupabase = typeof window !== 'undefined' ? window : globalThis;
 
-if (!globalForSupabase.__cotfact_supabase) {
-  globalForSupabase.__cotfact_supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Crear un ID único para esta instancia de Supabase para evitar problemas de hot-reloading
+const SUPABASE_INSTANCE_ID = 'cotfact_supabase_instance_v1';
+
+// Check if we already have an instance with this specific ID
+if (!globalForSupabase[SUPABASE_INSTANCE_ID]) {
+  globalForSupabase[SUPABASE_INSTANCE_ID] = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
@@ -34,10 +38,14 @@ if (!globalForSupabase.__cotfact_supabase) {
   });
 }
 
-export const supabase = globalForSupabase.__cotfact_supabase;
+// Export the singleton instance
+export const supabase = globalForSupabase[SUPABASE_INSTANCE_ID];
 
-if (!globalForSupabase.__cotfact_supabaseAdmin) {
-  globalForSupabase.__cotfact_supabaseAdmin = createClient<Database>(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+// Admin client (only used in specific contexts)
+const ADMIN_INSTANCE_ID = 'cotfact_supabase_admin_v1';
+
+if (!globalForSupabase[ADMIN_INSTANCE_ID] && supabaseServiceKey) {
+  globalForSupabase[ADMIN_INSTANCE_ID] = createClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -46,4 +54,4 @@ if (!globalForSupabase.__cotfact_supabaseAdmin) {
   });
 }
 
-export const supabaseAdmin = globalForSupabase.__cotfact_supabaseAdmin;
+export const supabaseAdmin = globalForSupabase[ADMIN_INSTANCE_ID];

@@ -9,6 +9,7 @@ import { sanitizeInputs } from './middleware/validationMiddleware';
 import { rateLimiters } from './middleware/rateLimitMiddleware';
 import { securityHeaders, requestTimeout, apiUsageTracking, logUnauthorizedAccessMiddleware } from './middleware/securityMiddleware';
 import path from 'path';
+import os from 'os'; // Importamos el módulo os para obtener interfaces de red
 
 // Cargar variables de entorno
 dotenv.config();
@@ -16,6 +17,22 @@ dotenv.config();
 const app = express();
 const initialPort = process.env.PORT ? parseInt(process.env.PORT) : 3001;
 let port = initialPort;
+
+// Obtener la dirección IP del servidor
+const getLocalIpAddress = () => {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name] || []) {
+      // Saltar direcciones internal y non-ipv4
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1'; // Fallback a IP local si no se encuentra una
+};
+
+const HOST_IP = process.env.HOST_IP || getLocalIpAddress();
 
 // Security enhancements
 // Apply helmet for basic security headers
@@ -90,7 +107,8 @@ app.get('/', (req, res) => {
   res.status(200).json({ 
     status: 'ok', 
     message: 'Servidor API funcionando correctamente',
-    timestamp: new Date().toISOString() 
+    timestamp: new Date().toISOString(),
+    host: HOST_IP 
   });
 });
 
@@ -100,7 +118,8 @@ app.get('/health', (req, res) => {
     status: 'ok',
     message: 'API Health check',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    host: HOST_IP
   });
 });
 
@@ -109,7 +128,8 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     status: 'ok',
     message: 'API está respondiendo correctamente',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    host: HOST_IP
   });
 });
 
@@ -143,9 +163,9 @@ app.use((err: Error & { statusCode?: number }, req: Request, res: Response, next
 // Function to try starting server on a given port
 const tryListenOnPort = (attemptPort: number): Promise<number> => {
   return new Promise((resolve, reject) => {
-    const server = app.listen(attemptPort)
+    const server = app.listen(attemptPort, HOST_IP)
       .on('listening', () => {
-        console.log(`Servidor corriendo en http://localhost:${attemptPort}`);
+        console.log(`Servidor corriendo en http://${HOST_IP}:${attemptPort}`);
         resolve(attemptPort);
       })
       .on('error', (err: NodeJS.ErrnoException) => {
@@ -174,6 +194,9 @@ const startServer = async () => {
     
     // Start the server with automatic port retry logic
     port = await tryListenOnPort(initialPort);
+    
+    console.log(`Backend disponible en la dirección IP: ${HOST_IP}:${port}`);
+    console.log('Para conexiones desde otros dispositivos, usa esta IP en lugar de localhost');
     
   } catch (error) {
     console.error('Error al iniciar el servidor:', error);

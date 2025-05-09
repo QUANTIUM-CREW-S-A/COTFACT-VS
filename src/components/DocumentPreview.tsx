@@ -1,5 +1,5 @@
 import React, { forwardRef } from "react";
-import { useDocuments } from "@/context/document/document-context";
+import { useDocuments } from "@/hooks/use-documents-context";
 import { Document } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import DocumentHeader from "./document-preview/DocumentHeader";
@@ -17,7 +17,7 @@ interface DocumentPreviewProps {
 
 const DocumentPreview = forwardRef<HTMLDivElement, DocumentPreviewProps>(
   ({ document }, ref) => {
-    const { companyInfo, templatePreferences } = useDocuments();
+    const { companyInfo = {}, templatePreferences = {} } = useDocuments() || {}; // Añadir valores por defecto
     const isMobile = useIsMobile();
     
     const formattedDate = new Date(document.date).toLocaleDateString('es-PA', {
