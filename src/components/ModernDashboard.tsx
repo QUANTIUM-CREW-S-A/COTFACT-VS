@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { Document } from '@/types';
 import { 
   FileText, FileCheck, DollarSign, 
   Users, BarChart2, Calendar,
@@ -27,7 +28,7 @@ import {
 } from "@/components/ui/card";
 
 // Este componente implementa el dashboard moderno con animaciones y gráficos mejorados
-const ModernDashboard: React.FC<{ documents: any[] }> = ({ documents = [] }) => {
+const ModernDashboard: React.FC<{ documents: Document[] }> = ({ documents = [] }) => {
   // Datos para los gráficos y estadísticas
   const today = new Date();
   const currentYear = today.getFullYear();

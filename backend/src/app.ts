@@ -97,7 +97,7 @@ app.use(apiUsageTracking());
 // Ensure logs directory exists
 const logDir = path.join(__dirname, '..', 'logs');
 try {
-  require('fs').mkdirSync(logDir, { recursive: true });
+  import('fs').then(fs => fs.mkdirSync(logDir, { recursive: true }));
 } catch (error) {
   console.warn(`Could not create logs directory: ${error}`);
 }

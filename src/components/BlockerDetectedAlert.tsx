@@ -9,6 +9,15 @@ interface BlockerDetectedAlertProps {
   onRetryConnection?: () => void;
 }
 
+interface BlockerState {
+  detected: boolean;
+  blockedUrls: string[];
+  detectionTimestamp: number;
+  attemptCount: number;
+  cooldownPeriodMs: number;
+  maxAttempts: number;
+}
+
 /**
  * Componente que muestra una alerta cuando se detectan bloqueadores de contenido
  * como AdBlock, uBlock, etc. que están interfiriendo con la aplicación.
@@ -16,7 +25,7 @@ interface BlockerDetectedAlertProps {
  */
 const BlockerDetectedAlert: React.FC<BlockerDetectedAlertProps> = ({ onRetryConnection }) => {
   const [isOpen, setIsOpen] = useState(true);
-  const [blockerState, setBlockerState] = useState<any>(null);
+  const [blockerState, setBlockerState] = useState<BlockerState | null>(null);
   const [backendIp, setBackendIp] = useState<string>(getLocalIpAddress());
   const [backendUrl, setBackendUrl] = useState<string>(getPreferredBackendUrl());
 

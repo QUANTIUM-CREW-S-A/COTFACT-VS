@@ -1,6 +1,7 @@
-import React, { createContext, useState, ReactNode, useEffect } from "react";
+import React, { useState, ReactNode, useEffect } from "react";
 import { UserRole } from "@/types/auth";
 import { AuthState, AuthContextType } from "./types";
+import { AuthContext } from "./AuthContext"; // Importar AuthContext desde el archivo correcto
 import { useAuthStorage } from "./useAuthStorage";
 import { useAuthActions } from "./useAuthActions";
 import { use2FAActions } from "./use2FAActions";
@@ -8,9 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Database } from '@/integrations/supabase/types';
 import { useLoading } from "../loading/LoadingContext";
-
-// Definir y exportar AuthContext aquí
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];

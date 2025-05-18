@@ -39,6 +39,20 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { useActivityLog } from "@/context/auth/hooks/useActivityLog";
 
+// Define interfaces for type safety
+interface UserProfile {
+  id: string;
+  email: string;
+  username: string;
+  intentos_fallidos: number;
+  bloqueado_hasta: string | null;
+}
+
+interface LockedAccountsResponse {
+  data: UserProfile[] | null;
+  error: Error | null;
+}
+
 interface LockedAccount {
   id: string;
   email: string;
@@ -72,11 +86,11 @@ const AccountLockingSection: React.FC = () => {
       
       const now = new Date();
       
-      // Usar any para evitar problemas de tipado con Supabase
+      // Consultar usuarios bloqueados
       const { data, error } = await supabase
         .from('profiles')
         .select('id, email, username, intentos_fallidos, bloqueado_hasta')
-        .not('bloqueado_hasta', 'is', null) as any;
+        .not('bloqueado_hasta', 'is', null) as LockedAccountsResponse;
         
       if (error) {
         console.error("Error al cargar cuentas bloqueadas:", error);
@@ -85,7 +99,7 @@ const AccountLockingSection: React.FC = () => {
       }
       
       // Filtrar en el cliente con seguridad de tipos
-      const currentlyLocked = (data || []).filter((account: any) => {
+      const currentlyLocked = (data || []).filter((account: UserProfile) => {
         try {
           if (!account || !account.bloqueado_hasta) return false;
           const lockExpiry = new Date(account.bloqueado_hasta);
@@ -96,7 +110,7 @@ const AccountLockingSection: React.FC = () => {
       });
       
       // Convertir explícitamente a nuestro tipo
-      const typedAccounts: LockedAccount[] = currentlyLocked.map((account: any) => ({
+      const typedAccounts: LockedAccount[] = currentlyLocked.map((account: UserProfile) => ({
         id: String(account.id || ''),
         email: String(account.email || ''),
         username: String(account.username || ''),
@@ -115,14 +129,14 @@ const AccountLockingSection: React.FC = () => {
 
   const handleUnlockAccount = async (accountId: string, email: string, username: string) => {
     try {
-      // Usar any para evitar problemas de tipado con Supabase
+      // Actualizar el perfil para desbloquear la cuenta
       const { error } = await supabase
         .from('profiles')
         .update({ 
           intentos_fallidos: 0, 
           bloqueado_hasta: null 
-        } as any)
-        .eq('id', accountId as any);
+        })
+        .eq('id', accountId);
         
       if (error) {
         console.error("Error al desbloquear cuenta:", error);

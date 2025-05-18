@@ -23,12 +23,12 @@ export const enableRealtimeForTable = async (tableName: string) => {
     // Make the table full replica identity to ensure complete row data in change events
     await supabase.rpc('set_table_replica_identity_full', { 
       table_name: tableName 
-    } as any);
+    });
     
     // Add the table to the supabase_realtime publication
     await supabase.rpc('add_table_to_realtime', { 
       table_name: tableName 
-    } as any);
+    });
     
     console.log(`Realtime enabled for table: ${tableName}`);
     return true;
@@ -99,7 +99,7 @@ export const getDocumentById = async (id: string) => {
   } catch (error) {
     console.error(`Error en getDocumentById:`, error);
     throw error;
-export const createDocument = async (document: DocumentWithUserId): Promise<DocumentDB> => {
+  }
 };
 
 export const createDocument = async (document: Partial<Document>): Promise<DocumentDB> => {
@@ -771,19 +771,4 @@ export const logout = async () => {
 };
 
 // Add a function to verify Supabase connection
-export const testSupabaseConnection = async () => {
-  try {
-    const { data, error } = await supabase.from('customers').select('*').limit(1);
-
-    if (error) {
-      console.error('Error testing Supabase connection:', error);
-      return false;
-    }
-
-    console.log('Supabase connection successful:', data);
-    return true;
-  } catch (error) {
-    console.error('Unexpected error testing Supabase connection:', error);
-    return false;
-  }
-};
+// Export testSupabaseConnection is now provided by realtime.ts

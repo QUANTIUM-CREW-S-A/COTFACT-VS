@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useActivityLog, ActivityLogEntry } from "@/context/auth/hooks/useActivityLog";
 import { useAuth } from "@/context/auth";
 import { 
@@ -65,16 +65,16 @@ const ActivityLogViewer: React.FC = () => {
   // Cargar registros de actividad al iniciar
   useEffect(() => {
     loadLogs();
-  }, []);
+  }, [loadLogs]);
 
-  const loadLogs = async () => {
+  const loadLogs = useCallback(async () => {
     const activityLogs = await getActivityLogs(
       limit, 
       undefined, 
-      filterType as any
+      filterType
     );
     setLogs(activityLogs);
-  };
+  }, [limit, filterType, getActivityLogs]);
 
   const handleClearOldLogs = async () => {
     const success = await clearOldActivityLogs(daysToKeep);

@@ -3,6 +3,7 @@ import { useDocuments } from "@/context/document/document-context";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Download, FileText, FileSpreadsheet, FileJson, FileOutput } from "lucide-react";
 import { toast } from "sonner";
+import { Document } from "@/types";
 import { exportToPDF, exportToCSV, exportDocumentsAsPDF } from "@/utils/documentExport";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ExportFilters from "./ExportFilters";
@@ -72,7 +73,7 @@ const DocumentExportDialog: React.FC<DocumentExportDialogProps> = ({
   });
 
   // Common export handling function
-  const handleExport = async (exportFunction: Function, formatName: string) => {
+  const handleExport = async (exportFunction: (documents: Document[]) => Promise<void>, formatName: string) => {
     if (onExportStart) onExportStart();
     setExporting(true);
     

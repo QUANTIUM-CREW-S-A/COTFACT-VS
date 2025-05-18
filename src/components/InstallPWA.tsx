@@ -3,6 +3,12 @@ import { X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 
+// Definición de la interfaz para el evento BeforeInstallPromptEvent de PWA
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed', platform: string }>;
+}
+
 /*
  * Componente InstallPWA.
  * - Muestra un banner para instalar la aplicación como PWA en dispositivos móviles.
@@ -11,21 +17,21 @@ import { Button } from '@/components/ui/button';
  */
 const InstallPWA = () => {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
-  const [installPromptEvent, setInstallPromptEvent] = useState<any>(null);
+  const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const isMobile = useIsMobile();
   
   useEffect(() => {
     // Detectar si la app ya está instalada
     const isInStandaloneMode = () => 
       window.matchMedia('(display-mode: standalone)').matches || 
-      (window.navigator as any).standalone || 
+      ('standalone' in window.navigator && (window.navigator as {standalone?: boolean}).standalone === true) || 
       document.referrer.includes('android-app://');
       
     if (isInStandaloneMode()) {
       return;
     }
     
-    const handleBeforeInstallPrompt = (e: Event) => {
+    const handleBeforeInstallPrompt = (e: BeforeInstallPromptEvent) => {
       // Prevenir el comportamiento por defecto
       e.preventDefault();
       // Guardar el evento

@@ -21,7 +21,7 @@ import { Separator } from "@/components/ui/separator";
 
 interface CustomerFormProps {
   customer: Omit<Customer, 'id'> | Customer;
-  setCustomer: (customer: any) => void;
+  setCustomer: (customer: Customer | Omit<Customer, 'id'>) => void;
   type: "add" | "edit";
 }
 
@@ -104,7 +104,7 @@ export const CustomerForm = forwardRef<CustomerFormRef, CustomerFormProps>(({
     } else {
       setSubType('individual');
     }
-  }, [customer.id]); // Solo al cambiar de cliente
+  }, [customer.id, customer.phone, customer.type, customer.metadata]); // Dependencias actualizadas
   
   // Validación del formulario
   const validateForm = () => {
@@ -142,7 +142,7 @@ export const CustomerForm = forwardRef<CustomerFormRef, CustomerFormProps>(({
     if (formattedPhone !== customer.phone) {
       setCustomer({...customer, phone: formattedPhone});
     }
-  }, [phonePrefix, phoneNumber]);
+  }, [phonePrefix, phoneNumber, customer, setCustomer]);
   
   // Actualizar subtipo cuando cambie
   useEffect(() => {
@@ -153,7 +153,7 @@ export const CustomerForm = forwardRef<CustomerFormRef, CustomerFormProps>(({
       };
       setCustomer({...customer, metadata: updatedMetadata});
     }
-  }, [subType]);
+  }, [subType, customer, setCustomer]);
   
   return (
     <Card className="border rounded-lg shadow-sm overflow-hidden animate-in fade-in-50 duration-300">

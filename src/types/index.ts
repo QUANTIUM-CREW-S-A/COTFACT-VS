@@ -12,7 +12,7 @@ export interface Customer {
   metadata?: {
     subType?: string;
     notes?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

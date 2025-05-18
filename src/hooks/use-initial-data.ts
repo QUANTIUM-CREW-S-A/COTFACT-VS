@@ -383,28 +383,30 @@ export const useInitialData = () => {
     };
     
     initializeData();
-  }, [authState.isAuthenticated, authState.currentUser?.id]);
+  }, [authState.isAuthenticated, authState.currentUser, docsLocalStorage, customersLocalStorage, 
+      companyInfoLocalStorage, templatePreferencesLocalStorage, setDocuments, setCustomers, 
+      setCompanyInfo, setTemplatePreferences, loadDocuments, loadCustomers, setIsLoading]);
 
   // Guardar en localStorage cuando cambien
   useEffect(() => {
     if (documents.length > 0) {
       setDocsLocalStorage(documents);
     }
-  }, [documents]);
+  }, [documents, setDocsLocalStorage]);
   
   useEffect(() => {
     if (customers.length > 0) {
       setCustomersLocalStorage(customers);
     }
-  }, [customers]);
+  }, [customers, setCustomersLocalStorage]);
   
   useEffect(() => {
     setCompanyInfoLocalStorage(companyInfo);
-  }, [companyInfo]);
+  }, [companyInfo, setCompanyInfoLocalStorage]);
   
   useEffect(() => {
     setTemplatePreferencesLocalStorage(templatePreferences);
-  }, [templatePreferences]);
+  }, [templatePreferences, setTemplatePreferencesLocalStorage]);
 
   return {
     documents,

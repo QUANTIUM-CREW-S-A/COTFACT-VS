@@ -11,7 +11,20 @@ import App from './App.tsx'
 import './index.css'
 import { AuthProvider } from './context/auth';
 
-const queryClient = new QueryClient();
+// Configuración mejorada de React Query con opciones de caché y re-fetch
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false, // No recargar datos al volver a la ventana
+      staleTime: 5 * 60 * 1000, // Los datos se consideran obsoletos después de 5 minutos
+      retry: 1, // Solo intentar una vez después de un error
+      gcTime: 10 * 60 * 1000, // Eliminar datos en caché después de 10 minutos
+    },
+    mutations: {
+      retry: 1, // Solo intentar una vez después de un error
+    }
+  }
+});
 
 // Registrar el service worker para PWA
 if ('serviceWorker' in navigator) {

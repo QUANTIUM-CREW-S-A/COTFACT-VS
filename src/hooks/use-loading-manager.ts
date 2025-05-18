@@ -39,6 +39,24 @@ export function useLoadingManager(
   }, [stopLoading]);
 
   /**
+   * Detiene una operación de carga
+   * @param source - Identificador opcional para la carga a detener
+   */
+  const stop = useCallback((source?: string) => {
+    const sourceId = source || sourceIdRef.current;
+    if (!sourceId) return;
+
+    // Limpiar el timeout si existe
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    // Detener la carga
+    stopLoading(sourceId);
+  }, [stopLoading]);
+
+  /**
    * Inicia una operación de carga
    * @param message - Mensaje a mostrar durante la carga
    * @param source - Identificador opcional para esta carga específica
@@ -65,25 +83,7 @@ export function useLoadingManager(
         stop(sourceId);
       }, options.timeout);
     }
-  }, [startLoading, options.timeout, options.silentOnTimeout]);
-
-  /**
-   * Detiene una operación de carga
-   * @param source - Identificador opcional para la carga a detener
-   */
-  const stop = useCallback((source?: string) => {
-    const sourceId = source || sourceIdRef.current;
-    if (!sourceId) return;
-
-    // Limpiar el timeout si existe
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-
-    // Detener la carga
-    stopLoading(sourceId);
-  }, [stopLoading]);
+  }, [startLoading, options.timeout, options.silentOnTimeout, stop]);
 
   /**
    * Envuelve una promesa con indicadores de carga automáticos
